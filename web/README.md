@@ -1,84 +1,73 @@
-# SOC Monitor Web - Frontend
+# React + TypeScript + Vite
 
-Aplicación frontend del sistema SOC Monitor, construida con SvelteKit.
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-## 🚀 Tecnologías
+Currently, two official plugins are available:
 
-- **SvelteKit** - Framework web moderno y rápido
-- **TypeScript** - Tipado estático para mayor seguridad
-- **Axios** - Cliente HTTP para llamadas a la API
-- **Recharts** - Gráficos y visualizaciones de datos
-- **French Toast** - Notificaciones toast
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
 
-## 📋 Requisitos
+## React Compiler
 
-- Node.js 18+
-- npm o yarn
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
 
-## 🛠️ Instalación
+## Expanding the ESLint configuration
 
-```bash
-cd web
-npm install
+If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+
+```js
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
+
+      // Remove tseslint.configs.recommended and replace with this
+      tseslint.configs.recommendedTypeChecked,
+      // Alternatively, use this for stricter rules
+      tseslint.configs.strictTypeChecked,
+      // Optionally, add this for stylistic rules
+      tseslint.configs.stylisticTypeChecked,
+
+      // Other configs...
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
 ```
 
-## 🚀 Comandos
+You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
 
-```bash
-# Desarrollo
-npm run dev
+```js
+// eslint.config.js
+import reactX from 'eslint-plugin-react-x'
+import reactDom from 'eslint-plugin-react-dom'
 
-# Build para producción
-npm run build
-
-# Preview de build
-npm run preview
-
-# Check de tipos
-npm run check
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
+      // Enable lint rules for React
+      reactX.configs['recommended-typescript'],
+      // Enable lint rules for React DOM
+      reactDom.configs.recommended,
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
 ```
-
-## 🔗 Integración con Backend
-
-La aplicación se conecta automáticamente a la API de FastAPI en `http://localhost:8000`.
-
-Variables de entorno:
-- `VITE_API_URL` - URL de la API backend (default: http://localhost:8000)
-
-## 📁 Estructura del Proyecto
-
-```
-web/
-├── src/
-│   ├── lib/
-│   │   └── components/    # Componentes reutilizables
-│   ├── routes/            # Páginas SvelteKit
-│   ├── stores/            # Estado global (stores)
-│   ├── services/          # Servicios de API
-│   └── app.html           # Plantilla HTML
-├── static/                # Archivos estáticos
-├── package.json
-├── svelte.config.js
-├── vite.config.js
-└── tsconfig.json
-```
-
-## 🎯 Características Futuras
-
-- [ ] Dashboard principal
-- [ ] Listado de reportes
-- [ ] Creación de reportes
-- [ ] Gráficos de estadísticas
-- [ ] Notificaciones en tiempo real
-- [ ] Integración con Slack UI
-
-## 💡 Notas
-
-- Los tokens JWT se almacenan en localStorage
-- Las rutas se sirven automáticamente por SvelteKit
-- El proxy de Vite redirige `/api` al backend FastAPI
-
----
-
-**Autor:** Walter Rios  
-**Última actualización:** 02/06/2026  

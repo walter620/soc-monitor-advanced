@@ -1,11 +1,16 @@
-# SvelteKit build outputs
-.svelte-kit/
-build/
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 
-# Environment variables
-.env
-.env.local
-.env.*.local
+node_modules
+dist
+dist-ssr
+*.local
 
 # Editor directories and files
 .vscode/*
@@ -17,15 +22,3 @@ build/
 *.njsproj
 *.sln
 *.sw?
-
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
-
-# Node modules
-node_modules
