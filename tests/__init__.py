@@ -1,0 +1,3 @@
+"""
+Inicializar configuración de tests
+"""
