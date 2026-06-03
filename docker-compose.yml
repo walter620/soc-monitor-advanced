@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  # API principal
+  # API principal (Backend)
   api:
     build: .
     ports:
@@ -13,7 +13,7 @@ services:
       - SECRET_KEY=your-super-secret-key-change-in-production
       - ALGORITHM=HS256
       - ACCESS_TOKEN_EXPIRE_MINUTES=30
-      - DATABASE_URL=postgresql://soc_user:soc_password@db:5432/soc_monitor
+      - DATABASE_URL=postgresql://soc_user:***@db:5432/soc_monitor
       - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN}
       - SLACK_SIGNING_SECRET=${SLACK_SIGNING_SECRET}
       - REDIS_URL=redis://redis:6379/0
@@ -25,6 +25,22 @@ services:
     volumes:
       - ./app:/app/app
       - ./alembic:/app/alembic
+    networks:
+      - soc-network
+    restart: unless-stopped
+
+  # Frontend (SvelteKit)
+  web:
+    build: ./web
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    depends_on:
+      - api
+    volumes:
+      - ./web:/app
+      - /app/node_modules
     networks:
       - soc-network
     restart: unless-stopped
