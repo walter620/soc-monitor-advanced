@@ -1,94 +1,63 @@
 version: '3.8'
 
 services:
-  # API principal (Backend)
   api:
-    build: .
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: soc-monitor-advanced-api
     ports:
       - "8000:8000"
     environment:
-      - APP_NAME=SOC Monitor Advanced
-      - APP_VERSION=2.0.0
-      - DEBUG=false
-      - SECRET_KEY=your-super-secret-key-change-in-production
-      - ALGORITHM=HS256
-      - ACCESS_TOKEN_EXPIRE_MINUTES=30
-      - DATABASE_URL=postgresql://soc_user:***@db:5432/soc_monitor
-      - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN}
-      - SLACK_SIGNING_SECRET=${SLACK_SIGNING_SECRET}
+      - DATABASE_URL=postgresql://soc_user:soc_pass123@db:5432/soc_monitor
       - REDIS_URL=redis://redis:6379/0
     depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_started
-    volumes:
-      - ./app:/app/app
-      - ./alembic:/app/alembic
+      - db
+      - redis
+    restart: unless-stopped
     networks:
       - soc-network
-    restart: unless-stopped
 
-  # Frontend (SvelteKit)
   web:
-    build: ./web
-    ports:
-      - "3000:3000"
-    environment:
-      - VITE_API_URL=http://localhost:8000
-    depends_on:
-      - api
+    image: python:3.11-slim
+    container_name: soc-monitor-advanced-web
+    working_dir: /app
     volumes:
       - ./web:/app
-      - /app/node_modules
+    ports:
+      - "3000:9090"
+    command: python3 -m http.server 9090 --directory /app
+    restart: unless-stopped
     networks:
       - soc-network
-    restart: unless-stopped
 
-  # Base de datos PostgreSQL
   db:
-    image: postgres:15-alpine
+    image: postgres:15
+    container_name: soc-monitor-advanced-db
     environment:
-      - POSTGRES_USER=soc_user
-      - POSTGRES_PASSWORD=soc_password
-      - POSTGRES_DB=soc_monitor
+      POSTGRES_USER: soc_user
+      POSTGRES_PASSWORD: soc_pass123
+      POSTGRES_DB: soc_monitor
+    ports:
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U soc_user -d soc_monitor"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+    restart: unless-stopped
     networks:
       - soc-network
-    restart: unless-stopped
 
-  # Redis para caching y sessions
   redis:
     image: redis:7-alpine
-    volumes:
-      - redis_data:/data
-    networks:
-      - soc-network
-    restart: unless-stopped
-
-  # Redis Commander para gestión de Redis (opcional)
-  redis-commander:
-    image: rediscommander/redis-commander:latest
-    environment:
-      - REDIS_HOSTS=local:redis:6379
+    container_name: soc-monitor-advanced-redis
     ports:
-      - "8081:8081"
-    depends_on:
-      - redis
+      - "6379:6379"
+    restart: unless-stopped
     networks:
       - soc-network
-    restart: unless-stopped
-
-volumes:
-  postgres_data:
-  redis_data:
 
 networks:
   soc-network:
     driver: bridge
+
+volumes:
+  postgres_data:

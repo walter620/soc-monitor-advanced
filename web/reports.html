@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <title>SOC Monitor v3.0 - Reportes Diarios</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #f9fafb; min-height: 100vh; }
+    .container { max-width: 1600px; margin: 0 auto; padding: 20px; }
+    .header { background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(10px); padding: 25px; border-radius: 12px; margin-bottom: 30px; border: 1px solid rgba(148, 163, 184, 0.1); box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
+    .header h1 { margin: 0 0 10px 0; font-size: 2rem; background: linear-gradient(135deg, #06b6d4, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .btn { padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; transition: all 0.3s ease; }
+    .btn-primary { background: linear-gradient(135deg, #06b6d4, #0891b2); color: white; }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(6, 182, 212, 0.4); }
+    .btn-success { background: linear-gradient(135deg, #10b981, #059669); color: white; }
+    .btn-warning { background: linear-gradient(135deg, #f59e0b, #d97706); color: white; }
+    .btn-danger { background: linear-gradient(135deg, #ef4444, #dc2626); color: white; }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px; }
+    .stat-card { background: rgba(15, 23, 42, 0.9); padding: 20px; border-radius: 12px; border: 1px solid rgba(148, 163, 184, 0.1); text-align: center; }
+    .stat-card .value { font-size: 2rem; font-weight: 700; color: #06b6d4; }
+    .stat-card .label { color: #9ca3af; font-size: 0.9rem; }
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+    .form-group { margin-bottom: 15px; }
+    .form-group label { display: block; color: #9ca3af; font-weight: 500; margin-bottom: 5px; font-size: 0.9rem; }
+    .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px 15px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(148, 163, 184, 0.2); border-radius: 8px; color: #f9fafb; font-size: 1rem; }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: #06b6d4; box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.1); }
+    .offense-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    .offense-table th, .offense-table td { padding: 12px; text-align: left; border-bottom: 1px solid rgba(148, 163, 184, 0.1); }
+    .offense-table th { background: rgba(6, 182, 212, 0.1); color: #06b6d4; font-weight: 600; }
+    .offense-table tr:hover { background: rgba(148, 163, 184, 0.05); }
+    .badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; }
+    .badge-severity-7 { background: linear-gradient(135deg, #ef4444, #dc2626); color: white; }
+    .badge-severity-4 { background: linear-gradient(135deg, #f59e0b, #d97706); color: white; }
+    .badge-new { background: linear-gradient(135deg, #10b981, #059669); color: white; }
+    .badge-closed { background: linear-gradient(135deg, #6b7280, #4b5563); color: white; }
+    .badge-severity-8 { background: linear-gradient(135deg, #b91c1c, #991b1b); color: white; }
+    .badge-severity-9 { background: linear-gradient(135deg, #7f1d1d, #450a0a); color: white; }
+    .badge-severity-10 { background: linear-gradient(135deg, #450a0a, #000000); color: white; animation: pulse 2s infinite; }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); z-index: 1000; align-items: center; justify-content: center; }
+    .modal.active { display: flex; }
+    .modal-content { background: rgba(15, 23, 42, 0.95); padding: 30px; border-radius: 16px; max-width: 900px; width: 90%; max-height: 90vh; overflow-y: auto; border: 1px solid rgba(148, 163, 184, 0.2); }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .modal-header h2 { font-size: 1.5rem; background: linear-gradient(135deg, #06b6d4, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .close-modal { background: none; border: none; color: #9ca3af; font-size: 1.5rem; cursor: pointer; }
+    .close-modal:hover { color: #f9fafb; }
+    .section { margin-bottom: 30px; padding: 20px; background: rgba(15, 23, 42, 0.7); border-radius: 12px; border: 1px solid rgba(148, 163, 184, 0.1); }
+    .section h3 { margin-bottom: 15px; color: #06b6d4; }
+    .offense-detail { margin-top: 10px; padding: 15px; background: rgba(6, 182, 212, 0.05); border-radius: 8px; }
+    .offense-detail p { margin-bottom: 8px; }
+    .offense-detail strong { color: #f9fafb; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>📊 Reportes Diarios SOC L1</h1>
+      <p>Gestión de reportes de monitoreo de seguridad - Sistema incremental</p>
+      <button class="btn btn-primary" onclick="openNewReportModal()">➕ Nuevo Reporte</button>
+    </div>
+
+    <!-- Resumen Ejecutivo -->
+    <div class="section">
+      <h3>📈 Resumen del Día</h3>
+      <div class="form-grid" style="margin-bottom: 15px;">
+        <div class="form-group">
+          <label>Fecha del Reporte</label>
+          <input type="date" id="reportDate">
+        </div>
+        <div class="form-group">
+          <label>Cliente / Ambiente</label>
+          <input type="text" id="reportClient" placeholder="Ej: Cap Cana">
+        </div>
+        <div class="form-group">
+          <label>Turno</label>
+          <select id="reportShift">
+            <option value="">Seleccionar turno</option>
+            <option value="mañana">Mañana</option>
+            <option value="tarde">Tarde</option>
+            <option value="noche">Noche</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Supervisor</label>
+          <input type="text" id="reportSupervisor">
+        </div>
+        <div class="form-group">
+          <label>Analista SOC L1</label>
+          <input type="text" id="reportAnalyst">
+        </div>
+      </div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Estado General</label>
+          <select id="reportStatus">
+            <option value="normal">Normal</option>
+            <option value="bien">Bien</option>
+            <option value="problematico">Problemático</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Punto Más Importante</label>
+          <input type="text" id="reportImportantPoint" placeholder="Punto destacado del día">
+        </div>
+        <div class="form-group">
+          <label>Riesgo Pendiente</label>
+          <input type="text" id="reportRisk" placeholder="n/a o detalle del riesgo">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Resumen del Turno</label>
+        <textarea id="reportSummary" rows="3" placeholder="Durante el turno se revisaron X ofensas en QRadar. Se cerraron X casos..."></textarea>
+      </div>
+    </div>
+
+    <!-- Métricas del Turno -->
+    <div class="section">
+      <h3>📊 Métricas del Turno</h3>
+      <div class="stats-grid" id="metricsGrid">
+        <div class="stat-card">
+          <div class="value" id="metricNew">0</div>
+          <div class="label">Ofensas Nuevas</div>
+        </div>
+        <div class="stat-card">
+          <div class="value" id="metricClosed">0</div>
+          <div class="label">Ofensas Cerradas</div>
+        </div>
+        <div class="stat-card">
+          <div class="value" id="metricOpen">0</div>
+          <div class="label">Ofensas Abiertas</div>
+        </div>
+        <div class="stat-card">
+          <div class="value" id="metricEscalated">0</div>
+          <div class="label">Ofensas Escaladas</div>
+        </div>
+        <div class="stat-card">
+          <div class="value" id="metricConfirmed">0</div>
+          <div class="label">Confirmadas</div>
+        </div>
+        <div class="stat-card">
+          <div class="value" id="metricCritical">0</div>
+          <div class="label">Críticas</div>
+        </div>
+        <div class="stat-card">
+          <div class="value" id="metricFalsePos">0</div>
+          <div class="label">Falsas Positivas</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Detalle de Ofensas -->
+    <div class="section">
+      <h3>📋 Detalle de Ofensas Analizadas</h3>
+      <table class="offense-table" id="offenseTable">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Hora</th>
+            <th>Descripción</th>
+            <th>Severidad</th>
+            <th>IP Origen</th>
+            <th>IP Destino</th>
+            <th>Usuario</th>
+            <th> Puerto/Protocolo</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="offenseList">
+          <!-- Se llena dinámicamente -->
+        </tbody>
+      </table>
+      <button class="btn btn-success" onclick="openAddOffenseModal()">➕ Agregar Ofensa</button>
+    </div>
+
+    <!-- Hallazgos y Patrones -->
+    <div class="section">
+      <h3>🔍 Hallazgos y Patrones del Día</h3>
+      <div class="form-group">
+        <label>Patrón Observado</label>
+        <select id="patternType">
+          <option value="ip_recurrentes">IPs Recurrentes</option>
+          <option value="usuarios_recurrentes">Usuarios Recurrentes</option>
+          <option value="reglas_ruido">Reglas con mucho ruido</option>
+          <option value="puertos_protocolos">Puertos/Protocolos Repetidos</option>
+          <option value="otros">Otros</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Detalle del Patrón</label>
+        <textarea id="patternDetail" rows="3" placeholder="Describa el patrón observado..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>Recomendación</label>
+        <textarea id="patternRecommendation" rows="2" placeholder="Recomendaciones basadas en el patrón..."></textarea>
+      </div>
+      <button class="btn btn-primary" onclick="addPattern()">➕ Agregar Hallazgo</button>
+    </div>
+
+    <!-- Casos Abiertos -->
+    <div class="section">
+      <h3>📌 Casos Abiertos para Seguimiento</h3>
+      <table class="offense-table" id="openCasesTable">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Ofensa ID</th>
+            <th>Motivo por el que queda abierto</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="openCasesList">
+          <!-- Se llena dinámicamente -->
+        </tbody>
+      </table>
+      <button class="btn btn-warning" onclick="openAddOpenCaseModal()">➕ Agregar Caso Abierto</button>
+    </div>
+
+    <!-- Observaciones -->
+    <div class="section">
+      <h3>📝 Novedades del Turno</h3>
+      <div class="form-group">
+        <label>Novedades e Incidentes del Turno</label>
+        <textarea id="reportObservations" rows="5" placeholder="Describa las novedades, incidentes, acciones realizadas y cualquier observación relevante del turno..."></textarea>
+      </div>
+    </div>
+
+    <!-- Botones de Acción -->
+    <div style="display: flex; gap: 10px; margin-top: 20px;">
+      <button class="btn btn-primary" onclick="saveReport()">💾 Guardar Reporte</button>
+      <button class="btn btn-success" onclick="exportToHTML()">📄 Exportar HTML</button>
+      <button class="btn btn-danger" onclick="clearReport()">🗑️ Limpiar</button>
+    </div>
+
+    <!-- Adjuntar Archivos -->
+    <div class="section" style="margin-top: 20px; padding: 25px; background: rgba(6, 182, 212, 0.05); border: 2px dashed rgba(6, 182, 212, 0.3);">
+      <h3 style="margin-bottom: 15px; color: #06b6d4;">📎 Adjuntar Archivos y Evidencias</h3>
+      <div class="form-group">
+        <label>Archivo(s) a adjuntar (PDF, JPG, PNG, CSV, TXT, DOCX)</label>
+        <input type="file" id="attachmentInput" multiple accept=".pdf,.jpg,.jpeg,.png,.csv,.txt,.doc,.docx,.xls,.xlsx,.log" onchange="handleFileSelect(this)">
+      </div>
+      <div id="attachmentsList" style="margin-top: 15px;"></div>
+      <button class="btn btn-warning" onclick="browseFiles()">📂 Explorar Archivos</button>
+      <button class="btn btn-primary" onclick="attachFiles()">📎 Adjuntar</button>
+      <button class="btn btn-danger" onclick="clearAttachments()">🗑️ Limpiar Adjuntos</button>
+    </div>
+
+    <!-- Información de Adjuntos -->
+    <div class="section">
+      <h3>📁 Adjuntos Guardados</h3>
+      <div id="savedAttachments" style="margin-top: 10px; color: #9ca3af; font-size: 0.9rem;"></div>
+    </div>
+  </div>
+
+  <!-- Modal: Nueva Ofensa -->
+  <div class="modal" id="offenseModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>➕ Nueva Ofensa</h2>
+        <button class="close-modal" onclick="closeOffenseModal()">&times;</button>
+      </div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>ID de Ofensa</label>
+          <input type="text" id="offenseId" placeholder="Ej: 6861">
+        </div>
+        <div class="form-group">
+          <label>Hora</label>
+          <input type="time" id="offenseTime">
+        </div>
+        <div class="form-group">
+          <label>Severidad (1-10)</label>
+          <select id="offenseSeverity">
+            <option value="1">1 - Mínima</option>
+            <option value="2">2 - Baja</option>
+            <option value="3">3 - Media-Baja</option>
+            <option value="4">4 - Media</option>
+            <option value="5">5 - Media-Alta</option>
+            <option value="6">6 - Alta</option>
+            <option value="7">7 - Muy Alta</option>
+            <option value="8">8 - Crítica</option>
+            <option value="9">9 - Muy Crítica</option>
+            <option value="10">10 - Extremadamente Crítica</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>IP de Origen</label>
+          <input type="text" id="offenseSrcIP" placeholder="Ej: 172.20.6.122">
+        </div>
+        <div class="form-group">
+          <label>IP de Destino</label>
+          <input type="text" id="offenseDestIP" placeholder="Ej: Multiples destino">
+        </div>
+        <div class="form-group">
+          <label>Usuario</label>
+          <input type="text" id="offenseUser" placeholder="Ej: anavila">
+        </div>
+        <div class="form-group">
+          <label>Puerto/Protocolo</label>
+          <input type="text" id="offensePort" placeholder="Ej: 7680/tcp_ip">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Descripción</label>
+        <textarea id="offenseDesc" rows="4" placeholder="Descripción detallada de la ofensa..."></textarea>
+      </div>
+      <button class="btn btn-primary" onclick="addOffense()">💾 Agregar Ofensa</button>
+    </div>
+  </div>
+
+  <script>
+    // Datos del reporte
+    let currentReport = {
+      offenses: [],
+      patterns: [],
+      openCases: []
+    };
+
+    // Inicializar
+    document.addEventListener('DOMContentLoaded', function() {
+      // Establecer fecha actual
+      document.getElementById('reportDate').value = new Date().toISOString().split('T')[0];
+      
+      // Cargar reporte si existe
+      loadReport();
+    });
+
+    function openNewReportModal() {
+      // Crear nuevo reporte
+      currentReport = {
+        offenses: [],
+        patterns: [],
+        openCases: [],
+        date: '',
+        client: '',
+        shift: '',
+        supervisor: '',
+        analyst: '',
+        status: 'normal',
+        summary: '',
+        importantPoint: '',
+        risk: '',
+        observations: ''
+      };
+      clearReport();
+    }
+
+    function openAddOffenseModal() {
+      document.getElementById('offenseModal').classList.add('active');
+    }
+
+    function closeOffenseModal() {
+      document.getElementById('offenseModal').classList.remove('active');
+    }
+
+    function addOffense() {
+      const offense = {
+        id: document.getElementById('offenseId').value,
+        time: document.getElementById('offenseTime').value,
+        description: document.getElementById('offenseDesc').value,
+        severity: document.getElementById('offenseSeverity').value,
+        srcIP: document.getElementById('offenseSrcIP').value,
+        destIP: document.getElementById('offenseDestIP').value,
+        user: document.getElementById('offenseUser').value,
+        port: document.getElementById('offensePort').value,
+        addedAt: new Date().toISOString()
+      };
+
+      if (!offense.id || !offense.description) {
+        alert('Por favor complete ID y descripción');
+        return;
+      }
+
+      currentReport.offenses.push(offense);
+      renderOffenses();
+      updateMetrics();
+      closeOffenseModal();
+      clearOffenseForm();
+    }
+
+    function clearOffenseForm() {
+      document.getElementById('offenseId').value = '';
+      document.getElementById('offenseTime').value = '';
+      document.getElementById('offenseDesc').value = '';
+      document.getElementById('offenseSeverity').value = '1';
+      document.getElementById('offenseSrcIP').value = '';
+      document.getElementById('offenseDestIP').value = '';
+      document.getElementById('offenseUser').value = '';
+      document.getElementById('offensePort').value = '';
+    }
+
+    function renderOffenses() {
+      const tbody = document.getElementById('offenseList');
+      tbody.innerHTML = '';
+
+      currentReport.offenses.forEach((offense, index) => {
+        const severityClass = 'badge-severity-' + offense.severity;
+        const row = `
+          <tr>
+            <td>${offense.id}</td>
+            <td>${offense.time}</td>
+            <td>${offense.description}</td>
+            <td><span class="badge ${severityClass}">${offense.severity}</span></td>
+            <td>${offense.srcIP}</td>
+            <td>${offense.destIP}</td>
+            <td>${offense.user}</td>
+            <td>${offense.port}</td>
+            <td>
+              <button class="btn btn-danger" onclick="deleteOffense(${index})" style="padding: 5px 10px; font-size: 0.8rem;">🗑️</button>
+            </td>
+          </tr>
+        `;
+        tbody.innerHTML += row;
+      });
+    }
+
+    function deleteOffense(index) {
+      if (confirm('¿Eliminar esta ofensa?')) {
+        currentReport.offenses.splice(index, 1);
+        renderOffenses();
+        updateMetrics();
+      }
+    }
+
+    function updateMetrics() {
+      document.getElementById('metricNew').textContent = currentReport.offenses.length;
+      document.getElementById('metricClosed').textContent = currentReport.offenses.filter(o => true).length;
+      document.getElementById('metricOpen').textContent = 0;
+      document.getElementById('metricEscalated').textContent = 0;
+      document.getElementById('metricConfirmed').textContent = 0;
+      document.getElementById('metricCritical').textContent = currentReport.offenses.filter(o => o.severity >= 8).length;
+      document.getElementById('metricFalsePos').textContent = 0;
+    }
+
+    function saveReport() {
+      // Recopilar datos del formulario
+      currentReport.date = document.getElementById('reportDate').value;
+      currentReport.client = document.getElementById('reportClient').value;
+      currentReport.shift = document.getElementById('reportShift').value;
+      currentReport.supervisor = document.getElementById('reportSupervisor').value;
+      currentReport.analyst = document.getElementById('reportAnalyst').value;
+      currentReport.status = document.getElementById('reportStatus').value;
+      currentReport.summary = document.getElementById('reportSummary').value;
+      currentReport.importantPoint = document.getElementById('reportImportantPoint').value;
+      currentReport.risk = document.getElementById('reportRisk').value;
+      currentReport.observations = document.getElementById('reportObservations').value;
+
+      // Guardar en localStorage
+      localStorage.setItem('soc_current_report', JSON.stringify(currentReport));
+      
+      alert('✅ Reporte guardado correctamente!');
+      console.log('Reporte guardado:', currentReport);
+    }
+
+    function loadReport() {
+      const saved = localStorage.getItem('soc_current_report');
+      if (saved) {
+        currentReport = JSON.parse(saved);
+        
+        document.getElementById('reportDate').value = currentReport.date || '';
+        document.getElementById('reportClient').value = currentReport.client || '';
+        document.getElementById('reportShift').value = currentReport.shift || '';
+        document.getElementById('reportSupervisor').value = currentReport.supervisor || '';
+        document.getElementById('reportAnalyst').value = currentReport.analyst || '';
+        document.getElementById('reportStatus').value = currentReport.status || 'normal';
+        document.getElementById('reportSummary').value = currentReport.summary || '';
+        document.getElementById('reportImportantPoint').value = currentReport.importantPoint || '';
+        document.getElementById('reportRisk').value = currentReport.risk || '';
+        document.getElementById('reportObservations').value = currentReport.observations || '';
+
+        renderOffenses();
+        updateMetrics();
+        
+        // Cargar adjuntos si existen
+        if (currentReport.attachments) {
+          const savedDiv = document.getElementById('savedAttachments');
+          savedDiv.innerHTML = '<strong>Archivos adjuntos:</strong><br>';
+          currentReport.attachments.forEach(att => {
+            savedDiv.innerHTML += `📎 ${att.name} (${formatBytes(att.size)})<br>`;
+          });
+        }
+      }
+    }
+
+    function exportToHTML() {
+      const report = currentReport;
+      
+      const html = `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Reporte Diario SOC L1 - ${report.date}</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 40px; background: #f5f5f5; }
+    .report { background: white; padding: 40px; border-radius: 8px; max-width: 1200px; margin: 0 auto; }
+    h1 { color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+    h2 { color: #34495e; margin-top: 30px; margin-bottom: 15px; }
+    .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+    .meta div { padding: 8px; background: #ecf0f1; border-radius: 4px; }
+    .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin: 20px 0; }
+    .metric-card { background: #3498db; color: white; padding: 15px; border-radius: 8px; text-align: center; }
+    .metric-card .value { font-size: 2rem; font-weight: bold; }
+    table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+    th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+    th { background: #3498db; color: white; }
+    tr:hover { background: #f5f5f5; }
+  </style>
+</head>
+<body>
+  <div class="report">
+    <h1>Reporte Diario SOC L1 - Monitoreo QRadar</h1>
+    
+    <h2>1. Datos del Reporte</h2>
+    <div class="meta">
+      <div><strong>Fecha:</strong> ${report.date || 'N/A'}</div>
+      <div><strong>Cliente / Ambiente:</strong> ${report.client || 'N/A'}</div>
+      <div><strong>Turno:</strong> ${report.shift || 'N/A'}</div>
+      <div><strong>Supervisor:</strong> ${report.supervisor || 'N/A'}</div>
+      <div><strong>Analista SOC L1:</strong> ${report.analyst || 'N/A'}</div>
+    </div>
+
+    <h2>2. Resumen Ejecutivo</h2>
+    <p><strong>Estado General:</strong> ${report.status}</p>
+    <p><strong>Resumen:</strong> ${report.summary || 'Sin resumen'}</p>
+    <p><strong>Punto Más Importante:</strong> ${report.importantPoint || 'N/A'}</p>
+    <p><strong>Riesgo Pendiente:</strong> ${report.risk || 'n/a'}</p>
+
+    <h2>3. Métricas del Turno</h2>
+    <div class="metrics">
+      <div class="metric-card"><div class="value">${report.offenses.length}</div><div>Nuevas</div></div>
+      <div class="metric-card"><div>0</div><div>Cerradas</div></div>
+      <div class="metric-card"><div>0</div><div>Abiertas</div></div>
+      <div class="metric-card"><div>0</div><div>Escaladas</div></div>
+      <div class="metric-card"><div>0</div><div>Confirmadas</div></div>
+      <div class="metric-card"><div>${report.offenses.filter(o => o.severity >= 8).length}</div><div>Críticas (8-10)</div></div>
+      <div class="metric-card"><div>0</div><div>Falsas Positivas</div></div>
+    </div>
+
+    <h2>4. Detalle de Ofensas Analizadas</h2>
+    <table>
+      <tr>
+        <th>ID</th>
+        <th>Hora</th>
+        <th>Descripción</th>
+        <th>Severidad</th>
+        <th>IP Origen</th>
+        <th>IP Destino</th>
+        <th>Usuario</th>
+        <th>Puerto/Protocolo</th>
+      </tr>
+      ${report.offenses.map(o => `
+        <tr>
+      <tr>
+        <th>ID</th>
+        <th>Hora</th>
+        <th>Descripción</th>
+        <th>Severidad</th>
+        <th>IP Origen</th>
+        <th>IP Destino</th>
+        <th>Usuario</th>
+        <th>Puerto/Protocolo</th>
+      </tr>
+      ${report.offenses.map(o => `
+        <tr>
+          <td>${o.id}</td>
+          <td>${o.time}</td>
+          <td>${o.description}</td>
+          <td>${o.severity}</td>
+          <td>${o.srcIP}</td>
+          <td>${o.destIP}</td>
+          <td>${o.user}</td>
+          <td>${o.port}</td>
+        </tr>
+      `).join('')}
+    </table>
+    
+    ${report.attachments && report.attachments.length > 0 ? `
+    <h2>9. Archivos Adjuntos</h2>
+    <ul>
+      ${report.attachments.map(att => `<li>${att.name} (${formatBytes(att.size)})</li>`).join('')}
+    </ul>
+    ` : ''}
+
+    <h2>8. Novedades del Turno</h2>
+    <p>${report.observations || 'Sin observaciones'}</p>
+  </div>
+</body>
+</html>
+      `;
+
+      const blob = new Blob([html], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Reporte_SOC_${report.date || 'sin_fecha'}.html`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function clearReport() {
+      localStorage.removeItem('soc_current_report');
+      document.getElementById('reportDate').value = new Date().toISOString().split('T')[0];
+      document.getElementById('reportClient').value = '';
+      document.getElementById('reportShift').value = '';
+      document.getElementById('reportSupervisor').value = '';
+      document.getElementById('reportAnalyst').value = '';
+      document.getElementById('reportStatus').value = 'normal';
+      document.getElementById('reportSummary').value = '';
+      document.getElementById('reportImportantPoint').value = '';
+      document.getElementById('reportRisk').value = '';
+      document.getElementById('reportObservations').value = '';
+      
+      currentReport = {
+        offenses: [],
+        patterns: [],
+        openCases: [],
+        attachments: []
+      };
+      
+      renderOffenses();
+      updateMetrics();
+    }
+    
+    // Funciones para manejo de archivos adjuntos
+    function handleFileSelect(input) {
+      const list = document.getElementById('attachmentsList');
+      list.innerHTML = '';
+      
+      if (input.files && input.files.length > 0) {
+        for (let i = 0; i < input.files.length; i++) {
+          const file = input.files[i];
+          const div = document.createElement('div');
+          div.style.cssText = 'padding: 10px; background: rgba(16, 185, 129, 0.1); border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;';
+          div.innerHTML = `
+            <span>📄 ${file.name} (${formatBytes(file.size)})</span>
+            <button onclick="this.parentElement.remove()" style="background: none; border: none; color: #ef4444; cursor: pointer; font-size: 1.2rem;">&times;</button>
+          `;
+          list.appendChild(div);
+        }
+      }
+    }
+
+    function formatBytes(bytes, decimals = 2) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const dm = decimals < 0 ? 0 : decimals;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+    }
+
+    function attachFiles() {
+      const input = document.getElementById('attachmentInput');
+      const attachments = [];
+      
+      if (input.files && input.files.length > 0) {
+        for (let i = 0; i < input.files.length; i++) {
+          attachments.push({
+            name: input.files[i].name,
+            size: input.files[i].size,
+            type: input.files[i].type,
+            addedAt: new Date().toISOString()
+          });
+        }
+        
+        // Guardar en localStorage (solo metadatos)
+        if (!currentReport.attachments) {
+          currentReport.attachments = [];
+        }
+        currentReport.attachments = currentReport.attachments.concat(attachments);
+        
+        // Mostrar en UI
+        const savedDiv = document.getElementById('savedAttachments');
+        savedDiv.innerHTML = '<strong>Archivos adjuntos:</strong><br>';
+        currentReport.attachments.forEach(att => {
+          savedDiv.innerHTML += `📎 ${att.name} (${formatBytes(att.size)})<br>`;
+        });
+        
+        alert(`✅ ${attachments.length} archivo(s) adjunto(s) correctamente!`);
+        input.value = ''; // Limpiar input
+      }
+    }
+
+    function clearAttachments() {
+      document.getElementById('attachmentsList').innerHTML = '';
+      document.getElementById('savedAttachments').innerHTML = '';
+      document.getElementById('attachmentInput').value = '';
+      
+      if (currentReport.attachments) {
+        currentReport.attachments = [];
+      }
+      
+      alert('✅ Adjuntos limpiados');
+    }
+
+    function browseFiles() {
+      document.getElementById('attachmentInput').click();
+    }
+  </script>
+</body>
+</html>

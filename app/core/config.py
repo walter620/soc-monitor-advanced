@@ -10,7 +10,11 @@ from pydantic import Field
 class Settings(BaseSettings):
     """Configuración del proyecto desde variables de entorno"""
     
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+    model_config = SettingsConfigDict(
+        env_file=".env", 
+        env_file_encoding="utf-8",
+        extra="ignore"  # Ignorar variables de entorno que no están en el modelo
+    )
     
     # Aplicación
     APP_NAME: str = Field(default="SOC Monitor Advanced", description="Nombre de la aplicación")

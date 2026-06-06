@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Prueba Usuarios SOC Monitor</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="mockAPI.js"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0f172a;
+      color: #f9fafb;
+      padding: 20px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .section {
+      background: #1e293b;
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      border: 1px solid #374151;
+    }
+    h1 {
+      color: #06b6d4;
+      margin-bottom: 30px;
+    }
+    h2 {
+      color: #8b5cf6;
+      margin-bottom: 15px;
+    }
+    button {
+      background: linear-gradient(135deg, #06b6d4, #8b5cf6);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      margin: 5px;
+      font-weight: 600;
+    }
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(6, 182, 212, 0.3);
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .output {
+      background: #111827;
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 15px;
+      font-family: monospace;
+      font-size: 13px;
+      min-height: 60px;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .success { color: #10b981; }
+    .error { color: #ef4444; }
+    .warning { color: #f59e0b; }
+  </style>
+</head>
+<body>
+  <h1>🧪 Prueba de Usuarios - SOC Monitor</h1>
+
+  <div class="section">
+    <h2>1. Verificación Inicial</h2>
+    <button onclick="testMockAPI()">✅ Verificar mockAPI</button>
+    <button onclick="loadInitialUsers()">📋 Cargar Usuarios Iniciales</button>
+    <div id="output1" class="output">Click en los botones para probar...</div>
+  </div>
+
+  <div class="section">
+    <h2>2. Crear Nuevo Usuario</h2>
+    <input type="text" id="newUsername" placeholder="Username" style="background: #374151; border: 1px solid #4b5563; color: white; padding: 8px; border-radius: 6px; margin: 5px;" />
+    <input type="text" id="newFullName" placeholder="Nombre Completo" style="background: #374151; border: 1px solid #4b5563; color: white; padding: 8px; border-radius: 6px; margin: 5px;" />
+    <input type="email" id="newEmail" placeholder="Email" style="background: #374151; border: 1px solid #4b5563; color: white; padding: 8px; border-radius: 6px; margin: 5px;" />
+    <input type="password" id="newPassword" placeholder="Contraseña" style="background: #374151; border: 1px solid #4b5563; color: white; padding: 8px; border-radius: 6px; margin: 5px;" />
+    <br />
+    <select id="newRole" style="background: #374151; color: white; padding: 8px; border-radius: 6px; margin: 5px;">
+      <option value="admin">Admin</option>
+      <option value="operator">Operador</option>
+      <option value="viewer">Visor</option>
+    </select>
+    <br />
+    <button onclick="createNewUser()">➕ Crear Usuario</button>
+    <div id="output2" class="output">Prueba creación de usuario...</div>
+  </div>
+
+  <div class="section">
+    <h2>3. Editar Usuario (Walterio)</h2>
+    <button onclick="editWalterio()">✏️ Editar walterio</button>
+    <div id="output3" class="output">Prueba edición de usuario...</div>
+  </div>
+
+  <div class="section">
+    <h2>4. Eliminar Usuario</h2>
+    <button onclick="deleteWalterio()">🗑️ Eliminar walterio</button>
+    <div id="output4" class="output">Prueba eliminación de usuario...</div>
+  </div>
+
+  <div class="section">
+    <h2>5. Ver Datos Guardados</h2>
+    <button onclick="viewLocalStorage()">💾 Ver localStorage</button>
+    <div id="output5" class="output">Verifica datos en localStorage...</div>
+  </div>
+
+  <script>
+    const output1 = document.getElementById('output1');
+    const output2 = document.getElementById('output2');
+    const output3 = document.getElementById('output3');
+    const output4 = document.getElementById('output4');
+    const output5 = document.getElementById('output5');
+
+    function log(el, message, type = '') {
+      el.textContent = message;
+      el.style.color = type === 'success' ? '#10b981' : 
+                       type === 'error' ? '#ef4444' : 
+                       type === 'warning' ? '#f59e0b' : '#f9fafb';
+    }
+
+    async function testMockAPI() {
+      log(output1, 'Verificando mockAPI...', 'warning');
+      
+      if (typeof mockAPI === 'undefined') {
+        log(output1, '❌ ERROR: mockAPI no está definido!', 'error');
+        return;
+      }
+      
+      log(output1, '✅ mockAPI existe', 'success');
+      
+      if (typeof mockAPI.getUsers !== 'function') {
+        log(output1, '❌ ERROR: mockAPI.getUsers no es una función', 'error');
+        return;
+      }
+      
+      log(output1, '✅ mockAPI.getUsers existe', 'success');
+      
+      if (typeof mockAPI.createUser !== 'function') {
+        log(output1, '❌ ERROR: mockAPI.createUser no es una función', 'error');
+        return;
+      }
+      
+      log(output1, '✅ mockAPI.createUser existe', 'success');
+      
+      if (typeof mockAPI.updateUser !== 'function') {
+        log(output1, '❌ ERROR: mockAPI.updateUser no es una función', 'error');
+        return;
+      }
+      
+      log(output1, '✅ mockAPI.updateUser existe', 'success');
+      
+      if (typeof mockAPI.deleteUser !== 'function') {
+        log(output1, '❌ ERROR: mockAPI.deleteUser no es una función', 'error');
+        return;
+      }
+      
+      log(output1, '✅ mockAPI.deleteUser existe', 'success');
+      
+      log(output1, '✅✅✅ mockAPI está completamente funcional!', 'success');
+    }
+
+    async function loadInitialUsers() {
+      log(output1, 'Cargando usuarios iniciales...', 'warning');
+      
+      try {
+        const users = await mockAPI.getUsers();
+        log(output1, `✅ Cargados ${users.length} usuarios:`, 'success');
+        users.forEach(u => {
+          log(output1, `  - ID: ${u.id}, Usuario: ${u.username}, Nombre: ${u.full_name}, Email: ${u.email}, Rol: ${u.role}`, 'success');
+        });
+      } catch (error) {
+        log(output1, `❌ Error: ${error.message}`, 'error');
+      }
+    }
+
+    async function createNewUser() {
+      const username = document.getElementById('newUsername').value.trim();
+      const fullName = document.getElementById('newFullName').value.trim();
+      const email = document.getElementById('newEmail').value.trim();
+      const password = document.getElementById('newPassword').value;
+      const role = document.getElementById('newRole').value;
+      
+      if (!username || !fullName || !email || !password) {
+        log(output2, '❌ Por favor completa todos los campos', 'error');
+        return;
+      }
+      
+      log(output2, 'Creando nuevo usuario...', 'warning');
+      
+      try {
+        const result = await mockAPI.createUser({
+          username,
+          full_name: fullName,
+          email,
+          password,
+          role,
+          is_active: true
+        });
+        
+        if (result.success) {
+          log(output2, `✅ Usuario creado exitosamente!`, 'success');
+          log(output2, `ID: ${result.user.id}, Usuario: ${result.user.username}`, 'success');
+          
+          // Limpiar campos
+          document.getElementById('newUsername').value = '';
+          document.getElementById('newFullName').value = '';
+          document.getElementById('newEmail').value = '';
+          document.getElementById('newPassword').value = '';
+        } else {
+          log(output2, `❌ Error: ${result.message}`, 'error');
+        }
+      } catch (error) {
+        log(output2, `❌ Error: ${error.message}`, 'error');
+      }
+    }
+
+    async function editWalterio() {
+      try {
+        const users = await mockAPI.getUsers();
+        const walterio = users.find(u => u.username === 'walterio');
+        
+        if (!walterio) {
+          log(output3, '❌ Usuario walterio no encontrado', 'error');
+          return;
+        }
+        
+        log(output3, `✏️ Editando walterio (ID: ${walterio.id})...`, 'warning');
+        
+        // Cambiar email
+        walterio.email = 'walter.nuevo@empresa.com';
+        walterio.full_name = 'Walter Rios Actualizado';
+        
+        const result = await mockAPI.updateUser(walterio.id, walterio);
+        
+        if (result.success) {
+          log(output3, `✅ walterio actualizado exitosamente!`, 'success');
+          log(output3, `Email nuevo: ${result.user.email}`, 'success');
+          log(output3, `Nombre nuevo: ${result.user.full_name}`, 'success');
+        } else {
+          log(output3, `❌ Error: ${result.message}`, 'error');
+        }
+      } catch (error) {
+        log(output3, `❌ Error: ${error.message}`, 'error');
+      }
+    }
+
+    async function deleteWalterio() {
+      try {
+        const users = await mockAPI.getUsers();
+        const walterio = users.find(u => u.username === 'walterio');
+        
+        if (!walterio) {
+          log(output4, '✅ Usuario walterio ya no existe (ya fue eliminado)', 'success');
+          return;
+        }
+        
+        if (!confirm('¿Estás seguro de eliminar a walterio?')) {
+          log(output4, '❌ Cancelado por el usuario', 'warning');
+          return;
+        }
+        
+        log(output4, '🗑️ Eliminando walterio (ID: ' + walterio.id + ')...', 'warning');
+        
+        const result = await mockAPI.deleteUser(walterio.id);
+        
+        if (result.success) {
+          log(output4, `✅ walterio eliminado exitosamente!`, 'success');
+          
+          // Verificar que ya no existe
+          const users2 = await mockAPI.getUsers();
+          const remaining = users2.find(u => u.username === 'walterio');
+          if (!remaining) {
+            log(output4, '✅ Verificado: walterio ya no existe en la lista', 'success');
+          }
+        } else {
+          log(output4, `❌ Error: ${result.message}`, 'error');
+        }
+      } catch (error) {
+        log(output4, `❌ Error: ${error.message}`, 'error');
+      }
+    }
+
+    function viewLocalStorage() {
+      const stored = localStorage.getItem('soc_users');
+      
+      if (!stored) {
+        log(output5, '❌ No hay datos en localStorage', 'error');
+        return;
+      }
+      
+      try {
+        const users = JSON.parse(stored);
+        log(output5, `💾 localStorage contiene ${users.length} usuario(s):`, 'success');
+        users.forEach(u => {
+          log(output5, `ID: ${u.id}, Usuario: ${u.username}, Email: ${u.email}, Rol: ${u.role}`, 'success');
+        });
+      } catch (error) {
+        log(output5, `❌ Error al parsear: ${error.message}`, 'error');
+      }
+    }
+
+    // Iniciar con mensaje
+    log(output1, '🔧 Sistema de prueba listo. Click en los botones para probar.', 'warning');
+    log(output1, 'Prueba recomendada: 1) Verificar mockAPI → 2) Crear usuario → 3) Editar walterio → 4) Eliminar walterio', 'success');
+  </script>
+</body>
+</html>

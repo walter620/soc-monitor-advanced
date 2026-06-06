@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Reports from './pages/Reports';
 import Users from './pages/Users';
 import Settings from './pages/Settings';
+import { apiService } from './services/api';
 
 function App() {
+  const navigate = useNavigate();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentPath, setCurrentPath] = useState('/');
   const [loading, setLoading] = useState(true);
@@ -26,38 +29,26 @@ function App() {
     const password = formData.get('password') as string;
 
     try {
-      const response = await fetch('http://150.240.162.65:8000/api/v1/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ username, password }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Credenciales inválidas');
-      }
-
-      const data = await response.json();
-      localStorage.setItem('authToken', data.access_token);
+      const response = await apiService.login(username, password);
+      apiService.setAuthToken(response.access_token);
       setIsLoggedIn(true);
       setCurrentPath('/');
     } catch (err: any) {
-      setError(err.message || 'Error al iniciar sesión');
+      setError(err.message || 'Credenciales inválidas');
     }
   };
 
   const handleLogout = () => {
     localStorage.removeItem('authToken');
     setIsLoggedIn(false);
-    setCurrentPath('/');
+    setCurrentPath('/login');
+    navigate('/login');
   };
 
   if (loading) {
     return (
       <div style={{ minHeight: '100vh', background: '#0a0e17', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div className="w-12 h-12 animate-spin text-cyan-400">🔄</div>
+        <Loader2 className="w-12 h-12 animate-spin text-cyan-400" />
       </div>
     );
   }

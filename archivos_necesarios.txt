@@ -1,0 +1,85 @@
+=================================================================
+  ARCHIVOS NECESARIOS PARA DESPLEGAR SOC MONITOR ADVANCED
+=================================================================
+
+DIRECTORIO: /Users/walterrios1/Desarrollo/soc-monitor-advanced/
+
+├── web/                                    # ⭐ FRONTEND REQUERIDO
+│   ├── src/
+│   │   ├── App.tsx                      ⭐
+│   │   ├── main.tsx                     ⭐
+│   │   ├── index.css                    ⭐
+│   │   ├── pages/
+│   │   │   ├── Login.tsx                ⭐
+│   │   │   ├── Dashboard.tsx            ⭐
+│   │   │   ├── Reports.tsx              ⭐
+│   │   │   ├── Users.tsx                ⭐
+│   │   │   └── Settings.tsx             ⭐
+│   │   ├── layouts/
+│   │   │   └── Layout.tsx               ⭐
+│   │   └── types/
+│   │       └── index.ts                 ⭐
+│   ├── public/                           (si existe)
+│   ├── package.json                     ⭐
+│   ├── package-lock.json                ⭐
+│   ├── vite.config.ts                   ⭐
+│   ├── tsconfig.json                    ⭐
+│   ├── tailwind.config.js               ⭐
+│   └── postcss.config.js                ⭐
+│
+├── app/                                  (BACKEND - OPCIONAL)
+│   ├── main.py                          (si usas backend)
+│   ├── core/
+│   │   ├── config.py                    (si usas backend)
+│   │   └── ...
+│   └── ...
+│
+├── docker-compose.yml                    (si usas Docker)
+├── .env                                  (variables de entorno)
+└── README.md                             (documentación)
+
+=================================================================
+  ARCHIVOS OBLIGATORIOS (MARKED WITH ⭐)
+=================================================================
+
+Para ejecutar SOLO el frontend (recomendado):
+  ✓ Todos los archivos en directorio web/
+  ✓ npm install (instala dependencias)
+  ✓ npm run build (compila para producción)
+  ✓ npm run preview (o npx vite preview)
+
+Para ejecutar frontend + backend completo:
+  ✓ Todos los archivos anteriores
+  ✓ Todos los archivos en directorio app/
+  ✓ requirements.txt
+  ✓ docker-compose.yml (opcional)
+
+=================================================================
+  ARCHIVOS QUE PUEDES IGNORAR:
+=================================================================
+
+  ✗ node_modules/ (se regera con npm install)
+  ✗ __pycache__/
+  ✗ *.pyc
+  ✗ .DS_Store
+  ✗ *.log
+  ✗ .git/ (puedes copiar si quieres historial)
+
+=================================================================
+  COMANDO PARA COPIAR (solo archivos necesarios):
+=================================================================
+
+cd /Users/walterrios1/Desarrollo/soc-monitor-advanced
+
+# Copiar todo excepto node_modules y archivos temporales
+rsync -av \
+  --exclude='node_modules' \
+  --exclude='__pycache__' \
+  --exclude='*.pyc' \
+  --exclude='.DS_Store' \
+  --exclude='*.log' \
+  --exclude='.git' \
+  /Users/walterrios1/Desarrollo/soc-monitor-advanced/ \
+  administrador@172.20.36.42:/home/administrador/
+
+=================================================================

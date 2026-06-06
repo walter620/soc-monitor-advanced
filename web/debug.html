@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SOC Monitor v3.0 - Diagnóstico</title>
+  <link rel="stylesheet" href="../styles/global.css">
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      color: #f9fafb;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .header h1 {
+      font-size: 2.5rem;
+      margin: 0 0 10px 0;
+      background: linear-gradient(135deg, #06b6d4, #8b5cf6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .header p {
+      color: #9ca3af;
+      font-size: 1.1rem;
+    }
+
+    .status-box {
+      background: rgba(15, 23, 42, 0.9);
+      backdrop-filter: blur(10px);
+      padding: 30px;
+      border-radius: 12px;
+      border: 1px solid rgba(148, 163, 184, 0.1);
+      margin-bottom: 30px;
+    }
+
+    .status-box h2 {
+      margin: 0 0 20px 0;
+      color: #f9fafb;
+      font-size: 1.5rem;
+    }
+
+    .status-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px;
+      margin-bottom: 10px;
+      background: rgba(15, 23, 42, 0.5);
+      border-radius: 8px;
+    }
+
+    .status-item .label {
+      color: #9ca3af;
+    }
+
+    .status-item .value {
+      font-weight: 600;
+    }
+
+    .status-item .status {
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .status-item .status.success {
+      background: rgba(16, 185, 129, 0.1);
+      color: #10b981;
+    }
+
+    .status-item .status.error {
+      background: rgba(239, 68, 68, 0.1);
+      color: #ef4444;
+    }
+
+    .status-item .status.warning {
+      background: rgba(245, 158, 11, 0.1);
+      color: #f59e0b;
+    }
+
+    .section {
+      background: rgba(15, 23, 42, 0.9);
+      backdrop-filter: blur(10px);
+      padding: 30px;
+      border-radius: 12px;
+      border: 1px solid rgba(148, 163, 184, 0.1);
+      margin-bottom: 30px;
+    }
+
+    .section h3 {
+      margin: 0 0 20px 0;
+      color: #06b6d4;
+      font-size: 1.3rem;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+    }
+
+    .stat-card {
+      background: rgba(15, 23, 42, 0.5);
+      padding: 20px;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .stat-card .number {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: #06b6d4;
+      margin: 10px 0;
+    }
+
+    .stat-card .label {
+      color: #9ca3af;
+      font-size: 0.9rem;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+      margin-top: 20px;
+    }
+
+    .btn {
+      padding: 12px 24px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #06b6d4, #0891b2);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(6, 182, 212, 0.4);
+    }
+
+    .btn-secondary {
+      background: rgba(148, 163, 184, 0.1);
+      color: #f9fafb;
+      border: 1px solid rgba(148, 163, 184, 0.3);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(148, 163, 184, 0.2);
+    }
+
+    .console-output {
+      background: #0f172a;
+      padding: 20px;
+      border-radius: 8px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.85rem;
+      max-height: 400px;
+      overflow-y: auto;
+      margin-top: 20px;
+    }
+
+    .console-output .success { color: #10b981; }
+    .console-output .error { color: #ef4444; }
+    .console-output .warning { color: #f59e0b; }
+    .console-output .info { color: #06b6d4; }
+    .console-output .debug { color: #8b5cf6; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(6, 182, 212, 0.3);
+      border-radius: 50%;
+      border-top-color: #06b6d4;
+      animation: spin 1s ease-in-out infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🔍 Diagnóstico del Sistema</h1>
+      <p>SOC Monitor v3.0 - Verificación de integridad y estado</p>
+    </div>
+
+    <!-- Estado del Sistema -->
+    <div class="status-box">
+      <h2>Estado General</h2>
+      <div class="status-item">
+        <span class="label">Versión de la Aplicación</span>
+        <span class="value" id="appVersion">Cargando...</span>
+      </div>
+      <div class="status-item">
+        <span class="label">API Status</span>
+        <span class="value" id="apiStatus">Cargando...</span>
+      </div>
+      <div class="status-item">
+        <span class="label">LocalStorage</span>
+        <span class="value" id="storageStatus">Cargando...</span>
+      </div>
+      <div class="status-item">
+        <span class="label">Consola del Navegador</span>
+        <span class="value" id="consoleStatus">Verificando...</span>
+      </div>
+    </div>
+
+    <!-- Estadísticas -->
+    <div class="section">
+      <h3>📊 Estadísticas del Sistema</h3>
+      <div class="grid">
+        <div class="stat-card">
+          <div class="number" id="totalUsers">0</div>
+          <div class="label">Usuarios Totales</div>
+        </div>
+        <div class="stat-card">
+          <div class="number" id="totalReports">0</div>
+          <div class="label">Reportes Activos</div>
+        </div>
+        <div class="stat-card">
+          <div class="number" id="storageSize">0</div>
+          <div class="label">Tamaño de Almacenamiento</div>
+        </div>
+        <div class="stat-card">
+          <div class="number" id="lastUpdate">-</div>
+          <div class="label">Última Actualización</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Verificación de Scripts -->
+    <div class="section">
+      <h3>📦 Verificación de Scripts</h3>
+      <div class="status-item">
+        <span class="label">Logger</span>
+        <span class="value" id="loggerCheck">Verificando...</span>
+      </div>
+      <div class="status-item">
+        <span class="label">MockAPI</span>
+        <span class="value" id="apiCheck">Verificando...</span>
+      </div>
+      <div class="status-item">
+        <span class="label">UserManager</span>
+        <span class="value" id="userManagerCheck">Verificando...</span>
+      </div>
+      <div class="status-item">
+        <span class="label">ReportManager</span>
+        <span class="value" id="reportManagerCheck">Verificando...</span>
+      </div>
+    </div>
+
+    <!-- Acciones -->
+    <div class="section">
+      <h3>⚙️ Acciones</h3>
+      <div class="button-group">
+        <button class="btn btn-primary" onclick="runFullDiagnosis()">
+          🔬 Ejecutar Diagnóstico Completo
+        </button>
+        <button class="btn btn-secondary" onclick="clearAllData()">
+          🗑️ Limpiar Todos los Datos
+        </button>
+        <button class="btn btn-secondary" onclick="showLogs()">
+          📋 Ver Logs
+        </button>
+      </div>
+      <div id="consoleOutput" class="console-output" style="display: none;"></div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="../core/utils/logger.js"></script>
+  <script src="../core/api/mockAPI.js"></script>
+  <script src="../core/classes/UserManager.js"></script>
+  <script>
+    // Inicialización
+    document.addEventListener('DOMContentLoaded', async function() {
+      logger.info('Diagnóstico inicializado');
+      await runInitialChecks();
+    });
+
+    // Verificaciones iniciales
+    async function runInitialChecks() {
+      try {
+        // Verificar versiones
+        document.getElementById('appVersion').textContent = mockAPI?.version || 'Desconocido';
+        
+        // Verificar API
+        const apiStatus = mockAPI ? '✅' : '❌';
+        document.getElementById('apiStatus').innerHTML = apiStatus;
+        
+        // Verificar localStorage
+        const storageStatus = localStorage ? '✅' : '❌';
+        document.getElementById('storageStatus').innerHTML = storageStatus;
+        
+        // Verificar consola
+        document.getElementById('consoleStatus').textContent = '✅ OK';
+        
+        // Cargar estadísticas
+        await loadStats();
+        
+        // Verificar scripts
+        checkScripts();
+        
+      } catch (error) {
+        logger.error('Error en verificaciones iniciales:', error);
+      }
+    }
+
+    // Cargar estadísticas
+    async function loadStats() {
+      try {
+        if (mockAPI) {
+          const users = await mockAPI.getUsers();
+          document.getElementById('totalUsers').textContent = users.length;
+          
+          const reports = await mockAPI.getReports();
+          const activeReports = reports.filter(r => r.status === 'open').length;
+          document.getElementById('totalReports').textContent = activeReports;
+          
+          // Calcular tamaño de almacenamiento
+          let totalSize = 0;
+          for (let key in localStorage) {
+            if (localStorage.hasOwnProperty(key)) {
+              totalSize += localStorage[key].length;
+            }
+          }
+          document.getElementById('storageSize').textContent = (totalSize / 1024).toFixed(2) + ' KB';
+          
+          // Última actualización
+          const settings = await mockAPI.getSettings();
+          const lastUpdate = settings?.updated_at || new Date().toISOString();
+          document.getElementById('lastUpdate').textContent = new Date(lastUpdate).toLocaleString();
+        }
+      } catch (error) {
+        logger.error('Error al cargar estadísticas:', error);
+      }
+    }
+
+    // Verificar scripts
+    function checkScripts() {
+      const checks = {
+        'loggerCheck': typeof Logger !== 'undefined',
+        'apiCheck': typeof mockAPI !== 'undefined',
+        'userManagerCheck': typeof userManager !== 'undefined',
+        'reportManagerCheck': typeof ReportManager !== 'undefined'
+      };
+
+      for (const [elementId, status] of Object.entries(checks)) {
+        const element = document.getElementById(elementId);
+        element.innerHTML = status ? '✅ OK' : '❌ FALTA';
+        element.className = status ? 'value success' : 'value error';
+      }
+    }
+
+    // Diagnóstico completo
+    async function runFullDiagnosis() {
+      logger.info('Iniciando diagnóstico completo...');
+      const output = document.getElementById('consoleOutput');
+      output.style.display = 'block';
+      output.innerHTML = '';
+
+      const steps = [
+        { label: 'Verificando MockAPI...', fn: checkMockAPI },
+        { label: 'Verificando UserManager...', fn: checkUserManager },
+        { label: 'Verificando datos...', fn: checkData },
+        { label: 'Verificando localStorage...', fn: checkLocalStorage },
+        { label: 'Generando reporte...', fn: generateReport }
+      ];
+
+      for (const step of steps) {
+        output.innerHTML += `<div class="info">▶️ ${step.label}</div>`;
+        output.scrollTop = output.scrollHeight;
+        
+        try {
+          await step.fn();
+        } catch (error) {
+          output.innerHTML += `<div class="error">❌ ${error.message}</div>`;
+        }
+        
+        output.scrollTop = output.scrollHeight;
+        await sleep(500);
+      }
+
+      output.innerHTML += `<div class="success">✅ Diagnóstico completado</div>`;
+    }
+
+    async function checkMockAPI() {
+      if (!mockAPI) throw new Error('MockAPI no está definido');
+      
+      const methods = ['getUsers', 'createUser', 'updateUser', 'deleteUser', 'getReports', 'createReport', 'updateReport', 'deleteReport'];
+      for (const method of methods) {
+        if (typeof mockAPI[method] !== 'function') {
+          throw new Error(`MockAPI.${method} no existe`);
+        }
+      }
+      
+      document.getElementById('consoleOutput').innerHTML += `<div class="success">✅ MockAPI completo (${methods.length} métodos)</div>`;
+    }
+
+    async function checkUserManager() {
+      if (!userManager) throw new Error('UserManager no está definido');
+      if (!userManager.loadUsers) throw new Error('UserManager.loadUsers no existe');
+      
+      const users = await userManager.loadUsers();
+      document.getElementById('consoleOutput').innerHTML += `<div class="success">✅ UserManager activo (${users.length} usuarios)</div>`;
+    }
+
+    async function checkData() {
+      if (!mockAPI) throw new Error('MockAPI no disponible');
+      
+      const users = await mockAPI.getUsers();
+      const reports = await mockAPI.getReports();
+      const settings = await mockAPI.getSettings();
+      
+      document.getElementById('consoleOutput').innerHTML += `
+        <div class="success">✅ Datos verificados</div>
+        <div class="info">   - Usuarios: ${users.length}</div>
+        <div class="info">   - Reportes: ${reports.length}</div>
+        <div class="info">   - Configuración: ${settings ? 'OK' : 'FALTA'}</div>
+      `;
+    }
+
+    async function checkLocalStorage() {
+      const keys = Object.keys(localStorage);
+      const dataKeys = ['soc_monitor_api_users', 'soc_monitor_api_reports', 'soc_monitor_api_settings'];
+      const presentKeys = dataKeys.filter(key => localStorage.hasOwnProperty(key));
+      
+      document.getElementById('consoleOutput').innerHTML += `
+        <div class="success">✅ localStorage verificada</div>
+        <div class="info">   - Claves totales: ${keys.length}</div>
+        <div class="info">   - Claves SOC Monitor: ${presentKeys.length}</div>
+      `;
+    }
+
+    function generateReport() {
+      const report = {
+        timestamp: new Date().toISOString(),
+        appVersion: mockAPI?.version,
+        usersCount: localStorage.getItem('soc_monitor_api_users') ? 
+          JSON.parse(localStorage.getItem('soc_monitor_api_users')).length : 0,
+        reportsCount: localStorage.getItem('soc_monitor_api_reports') ? 
+          JSON.parse(localStorage.getItem('soc_monitor_api_reports')).length : 0
+      };
+      
+      document.getElementById('consoleOutput').innerHTML += `
+        <div class="success">✅ ${JSON.stringify(report, null, 2)}</div>
+      `;
+    }
+
+    // Limpiar todos los datos
+    async function clearAllData() {
+      if (!confirm('¿Estás seguro de que deseas eliminar TODOS los datos? Esta acción no se puede deshacer.')) {
+        return;
+      }
+
+      try {
+        if (mockAPI) {
+          await mockAPI.initializeData();
+          document.getElementById('consoleOutput').innerHTML += '<div class="success">✅ Datos reiniciados a valores por defecto</div>';
+          await loadStats();
+        }
+      } catch (error) {
+        document.getElementById('consoleOutput').innerHTML += `<div class="error">❌ Error al reiniciar datos: ${error.message}</div>`;
+      }
+    }
+
+    // Ver logs
+    function showLogs() {
+      const output = document.getElementById('consoleOutput');
+      output.style.display = 'block';
+      output.innerHTML = `
+        <div class="info">========================================</div>
+        <div class="info">LOGS DEL SISTEMA - SOC Monitor v3.0</div>
+        <div class="info">========================================</div>
+        <br>
+        <div class="debug">Logger: ${typeof Logger !== 'undefined' ? 'OK' : 'FALTO'}</div>
+        <div class="debug">MockAPI: ${typeof mockAPI !== 'undefined' ? 'OK' : 'FALTO'}</div>
+        <div class="debug">UserManager: ${typeof userManager !== 'undefined' ? 'OK' : 'FALTO'}</div>
+        <br>
+        <div class="info">Para ver más detalles, abre la consola del navegador (F12)</div>
+      `;
+    }
+
+    // Utilidad
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+  </script>
+</body>
+</html>

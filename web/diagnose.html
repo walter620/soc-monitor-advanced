@@ -1,0 +1,203 @@
+Welcome to Ubuntu 26.04 LTS (GNU/Linux 7.0.0-1005-ibm x86_64)
+
+ * Documentation:  https://docs.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/pro
+
+ System information as of Sat Jun  6 14:00:02 UTC 2026
+
+  System load:  0.0                Processes:             155
+  Usage of /:   17.2% of 47.35GB   Users logged in:       0
+  Memory usage: 10%                IPv4 address for ens3: 10.240.0.5
+  Swap usage:   0%
+
+ * Strictly confined Kubernetes makes edge and IoT secure. Learn how MicroK8s
+   just raised the bar for easy, resilient and secure K8s cluster deployment.
+
+   https://ubuntu.com/engage/secure-kubernetes-at-the-edge
+
+Expanded Security Maintenance for Applications is not enabled.
+
+0 updates can be applied immediately.
+
+Enable ESM Apps to receive additional future security updates.
+See https://ubuntu.com/esm or run: sudo pro status
+
+
+*** System restart required ***
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Diagnóstico SOC Monitor</title>
+  <style>
+    body {
+      font-family: monospace;
+      padding: 20px;
+      background: #0f172a;
+      color: #f9fafb;
+    }
+    .success { color: #10b981; }
+    .error { color: #ef4444; }
+    .warning { color: #f59e0b; }
+    pre { background: #1e293b; padding: 10px; border-radius: 8px; overflow-x: auto; }
+  </style>
+</head>
+<body>
+  <h1>🔧 Diagnóstico SOC Monitor</h1>
+  <div id="diagnosis"></div>
+
+  <script>
+    const STORAGE_KEYS = {
+      TOKEN: 'authToken',
+      USER: 'username',
+      ROLE: 'role',
+      LOGGED_IN: 'isLoggedIn'
+    };
+
+    const diagnosis = document.getElementById('diagnosis');
+    
+    function log(message, type = '') {
+      diagnosis.innerHTML += `<div class="${type}">${message}</div>`;
+    }
+
+    // Verificar localStorage
+    log('=== ESTADO DEL localStorage ===', 'warning');
+    
+    const isLoggedIn = localStorage.getItem(STORAGE_KEYS.LOGGED_IN);
+    const username = localStorage.getItem(STORAGE_KEYS.USER);
+    const role = localStorage.getItem(STORAGE_KEYS.ROLE);
+    const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
+    
+    log(`isLoggedIn: ${isLoggedIn}`, isLoggedIn === 'true' ? 'success' : 'error');
+    log(`username: ${username || 'NO ESTABLECIDO'}`);
+    log(`role: ${role || 'NO ESTABLECIDO'}`);
+    log(`token: ${token ? 'EXISTE' : 'NO EXISTE'}`);
+    
+    log('');
+    
+    // Verificar navegación
+    log('=== NAVEGACIÓN ===', 'warning');
+    log(`Current URL: ${window.location.href}`);
+    log(`Pathname: ${window.location.pathname}`);
+    
+    // Botones de prueba
+    log('');
+    log('=== PRUEBAS ===', 'warning');
+    
+    const btnContainer = document.createElement('div');
+    btnContainer.style.marginTop = '20px';
+    btnContainer.innerHTML = `
+      <button onclick="testLogin()" style="background: #06b6d4; color: white; border: none; padding: 10px 20px; border-radius: 8px; margin: 5px; cursor: pointer;">
+        🔐 Login (admin/admin123)
+      </button>
+      <button onclick="testLogout()" style="background: #ef4444; color: white; border: none; padding: 10px 20px; border-radius: 8px; margin: 5px; cursor: pointer;">
+        🚪 Logout
+      </button>
+      <button onclick="goDashboard()" style="background: #8b5cf6; color: white; border: none; padding: 10px 20px; border-radius: 8px; margin: 5px; cursor: pointer;">
+        📊 Ir al Dashboard
+      </button>
+      <button onclick="goReports()" style="background: #10b981; color: white; border: none; padding: 10px 20px; border-radius: 8px; margin: 5px; cursor: pointer;">
+        📋 Ir a Reportes
+      </button>
+      <button onclick="goUsers()" style="background: #f59e0b; color: white; border: none; padding: 10px 20px; border-radius: 8px; margin: 5px; cursor: pointer;">
+        👥 Ir a Usuarios
+      </button>
+    `;
+    diagnosis.appendChild(btnContainer);
+    
+    window.testLogin = function() {
+      localStorage.setItem(STORAGE_KEYS.LOGGED_IN, 'true');
+      localStorage.setItem(STORAGE_KEYS.USER, 'admin');
+      localStorage.setItem(STORAGE_KEYS.ROLE, 'admin');
+      localStorage.setItem(STORAGE_KEYS.TOKEN, 'token-' + Date.now());
+      log('✅ Sesión establecida: admin', 'success');
+    };
+    
+    window.testLogout = function() {
+      localStorage.removeItem(STORAGE_KEYS.LOGGED_IN);
+      localStorage.removeItem(STORAGE_KEYS.USER);
+      localStorage.removeItem(STORAGE_KEYS.ROLE);
+      localStorage.removeItem(STORAGE_KEYS.TOKEN);
+      log('❌ Sesión eliminada', 'error');
+    };
+    
+    window.goDashboard = function() {
+      window.location.href = 'dashboard.html';
+    };
+    
+    window.goReports = function() {
+      window.location.href = 'reports.html';
+    };
+    
+    window.goUsers = function() {
+      window.location.href = 'users.html';
+    };
+    
+    log('');
+    log('💡 Para probar:', 'warning');
+    log('1. Click en "Login" para establecer sesión', 'warning');
+    log('2. Click en "Ir al Dashboard" para navegar', 'warning');
+    log('3. Click en "Logout" para eliminar sesión', 'warning');
+    log('4. Verifica que las páginas cargan correctamente', 'warning');
+  </script>
+
+  <script>
+    // Mostrar usuario conectado
+    function showCurrentUser() {
+      const currentUser = localStorage.getItem('soc_user');
+      const userRole = localStorage.getItem('soc_user_role');
+      
+      // Actualizar cualquier elemento de usuario
+      const sidebarUsername = document.getElementById('sidebarUsername');
+      const sidebarRole = document.getElementById('sidebarRole');
+      
+      if (currentUser) {
+        if (sidebarUsername) sidebarUsername.textContent = currentUser;
+        if (sidebarRole) sidebarRole.textContent = userRole || 'admin';
+        
+        // Generar avatar con iniciales
+        const userAvatar = document.querySelector('.user-avatar');
+        if (userAvatar) {
+          const initials = currentUser.substring(0, 2).toUpperCase();
+          userAvatar.textContent = initials;
+        }
+        
+        console.log('[SOC Monitor] Usuario en ' + window.location.pathname.split('/').pop() + ':', currentUser);
+      } else {
+        window.location.href = 'index.html';
+      }
+    }
+
+    // Actualizar funciones de logout si existen
+    if (typeof logout !== 'undefined') {
+      const originalLogout = logout;
+      window.logout = function() {
+        console.log('[SOC Monitor] Logout iniciado...');
+        localStorage.removeItem('soc_auth_token');
+        localStorage.removeItem('soc_user');
+        localStorage.removeItem('soc_user_role');
+        localStorage.removeItem('soc_users');
+        console.log('[SOC Monitor] Sesión eliminada');
+        window.location.href = 'index.html';
+      };
+    } else if (typeof handleLogout !== 'undefined') {
+      const originalHandleLogout = handleLogout;
+      window.handleLogout = function() {
+        console.log('[SOC Monitor] Logout iniciado...');
+        localStorage.removeItem('soc_auth_token');
+        localStorage.removeItem('soc_user');
+        localStorage.removeItem('soc_user_role');
+        localStorage.removeItem('soc_users');
+        console.log('[SOC Monitor] Sesión eliminada');
+        window.location.href = 'index.html';
+      };
+    }
+
+    // Inicializar
+    document.addEventListener('DOMContentLoaded', showCurrentUser);
+  </script>
+</body>
+</html>
+

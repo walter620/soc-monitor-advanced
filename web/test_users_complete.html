@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Test Usuarios - Debug</title>
+  <style>
+    body {
+      font-family: monospace;
+      padding: 20px;
+      background: #0f172a;
+      color: #f9fafb;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+    .success { color: #10b981; }
+    .error { color: #ef4444; }
+    .warning { color: #f59e0b; }
+    .info { color: #06b6d4; }
+    pre {
+      background: #1e293b;
+      padding: 15px;
+      border-radius: 8px;
+      margin: 10px 0;
+      overflow-x: auto;
+      font-size: 12px;
+    }
+    button {
+      background: linear-gradient(135deg, #06b6d4, #8b5cf6);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      margin: 5px;
+      font-weight: 600;
+    }
+    button:hover { transform: translateY(-2px); }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    h1 { color: #06b6d4; }
+    h2 { color: #8b5cf6; margin-top: 20px; }
+    .box {
+      background: #1e293b;
+      padding: 15px;
+      border-radius: 8px;
+      border: 1px solid #374151;
+      margin-bottom: 15px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔬 Test Completo de Usuarios</h1>
+
+  <div class="box">
+    <h2>1. Verificación de Scripts</h2>
+    <button onclick="checkScripts()">📦 Verificar scripts cargados</button>
+    <pre id="output1">Click para verificar...</pre>
+  </div>
+
+  <div class="box">
+    <h2>2. Prueba CRUD Directa</h2>
+    <button onclick="testCRUD()">🧪 Ejecutar pruebas CRUD</button>
+    <pre id="output2">Click para probar...</pre>
+  </div>
+
+  <div class="box">
+    <h2>3. Debug del Navegador</h2>
+    <button onclick="debugBrowser()">🌐 Verificar navegador</button>
+    <pre id="output3">Click para debug...</pre>
+  </div>
+
+  <div class="box">
+    <h2>4. Estado Actual</h2>
+    <button onclick="checkCurrentState()">📊 Ver estado actual</button>
+    <pre id="output4">Click para ver estado...</pre>
+  </div>
+
+  <script src="mockAPI.js"></script>
+  <script>
+    // Función para escribir output
+    function setOutput(id, text, type = '') {
+      const el = document.getElementById(id);
+      el.style.color = type === 'success' ? '#10b981' : 
+                       type === 'error' ? '#ef4444' : 
+                       type === 'warning' ? '#f59e0b' : 
+                       type === 'info' ? '#06b6d4' : '#f9fafb';
+      el.textContent = text;
+      console.log('[OUTPUT]', text);
+    }
+
+    // 1. Verificar Scripts
+    async function checkScripts() {
+      const lines = [];
+      lines.push('📦 VERIFICACIÓN DE SCRIPTS');
+      lines.push('');
+      
+      // Verificar mockAPI
+      lines.push('1. mockAPI:');
+      if (typeof mockAPI === 'undefined') {
+        lines.push('   ❌ mockAPI NO está definido');
+        lines.push('   ❌ ERROR: mockAPI.js no se cargó');
+      } else {
+        lines.push('   ✅ mockAPI está definido');
+        lines.push('   - getUsers: ' + (typeof mockAPI.getUsers === 'function' ? '✅' : '❌'));
+        lines.push('   - createUser: ' + (typeof mockAPI.createUser === 'function' ? '✅' : '❌'));
+        lines.push('   - updateUser: ' + (typeof mockAPI.updateUser === 'function' ? '✅' : '❌'));
+        lines.push('   - deleteUser: ' + (typeof mockAPI.deleteUser === 'function' ? '✅' : '❌'));
+      }
+      
+      // Verificar localStorage
+      lines.push('');
+      lines.push('2. localStorage:');
+      const stored = localStorage.getItem('soc_users');
+      if (stored) {
+        try {
+          const users = JSON.parse(stored);
+          lines.push('   ✅ soc_users existe con ' + users.length + ' usuario(s)');
+          users.forEach(u => {
+            lines.push('     - ID: ' + u.id + ', Usuario: ' + u.username);
+          });
+        } catch (e) {
+          lines.push('   ❌ Error al parsear: ' + e.message);
+        }
+      } else {
+        lines.push('   ⚠️ soc_users NO existe (vacío)');
+      }
+      
+      // Verificar URL
+      lines.push('');
+      lines.push('3. Información de la página:');
+      lines.push('   URL: ' + window.location.href);
+      lines.push('   Path: ' + window.location.pathname);
+      
+      // Verificar qué archivos JS se están cargando
+      lines.push('');
+      lines.push('4. Scripts en el DOM:');
+      const scripts = document.querySelectorAll('script[src]');
+      if (scripts.length === 0) {
+        lines.push('   ⚠️ NO se detectan scripts src');
+      } else {
+        scripts.forEach(s => {
+          lines.push('   - ' + s.src);
+        });
+      }
+      
+      lines.push('');
+      lines.push('========================================');
+      if (typeof mockAPI !== 'undefined' && mockAPI.getUsers && mockAPI.createUser && mockAPI.updateUser && mockAPI.deleteUser) {
+        lines.push('✅ TODOS LOS SCRIPTS CARGADOS CORRECTAMENTE');
+      } else {
+        lines.push('❌ ALGUNOS SCRIPTS NO SE CARGARON');
+      }
+      lines.push('========================================');
+      
+      setOutput('output1', lines.join('\n'), 'info');
+    }
+
+    // 2. Test CRUD
+    async function testCRUD() {
+      const lines = [];
+      lines.push('🧪 PRUEBAS CRUD');
+      lines.push('');
+      
+      // Verificar que mockAPI existe
+      if (typeof mockAPI === 'undefined') {
+        lines.push('❌ ERROR: mockAPI no existe');
+        setOutput('output2', lines.join('\n'), 'error');
+        return;
+      }
+      
+      // Test 1: Cargar usuarios
+      lines.push('1. CARGANDO USUARIOS...');
+      try {
+        const users = await mockAPI.getUsers();
+        lines.push('   ✅ Cargados ' + users.length + ' usuario(s)');
+        users.forEach(u => {
+          lines.push('      ID: ' + u.id + ', Usuario: ' + u.username + ', Email: ' + u.email);
+        });
+      } catch (error) {
+        lines.push('   ❌ Error: ' + error.message);
+        setOutput('output2', lines.join('\n'), 'error');
+        return;
+      }
+      
+      // Test 2: Buscar walterio
+      lines.push('');
+      lines.push('2. BUSCANDO WALTERIO...');
+      const stored = localStorage.getItem('soc_users');
+      if (stored) {
+        try {
+          const users = JSON.parse(stored);
+          const walterio = users.find(u => u.username === 'walterio');
+          if (walterio) {
+            lines.push('   ✅ walterio encontrado');
+            lines.push('      ID: ' + walterio.id);
+            lines.push('      Usuario: ' + walterio.username);
+            lines.push('      Email: ' + walterio.email);
+            lines.push('      Role: ' + walterio.role);
+          } else {
+            lines.push('   ❌ walterio NO encontrado');
+            lines.push('      Usuarios disponibles: ' + users.map(u => u.username).join(', '));
+          }
+        } catch (e) {
+          lines.push('   ❌ Error: ' + e.message);
+        }
+      } else {
+        lines.push('   ⚠️ No hay datos en localStorage');
+      }
+      
+      // Test 3: Intentar eliminar walterio
+      lines.push('');
+      lines.push('3. PRUEBA DE ELIMINACIÓN...');
+      if (stored) {
+        try {
+          const users = JSON.parse(stored);
+          const walterio = users.find(u => u.username === 'walterio');
+          
+          if (!walterio) {
+            lines.push('   ⚠️ walterio no existe, no se puede eliminar');
+          } else if (walterio.id === 1) {
+            lines.push('   ❌ walterio tiene ID=1 (admin principal)');
+            lines.push('   ❌ NO se puede eliminar');
+          } else {
+            lines.push('   ✅ walterio encontrado (ID: ' + walterio.id + ')');
+            lines.push('   ✅ ID ≠ 1, se puede eliminar');
+            
+            // Intentar eliminar
+            const result = await mockAPI.deleteUser(walterio.id);
+            lines.push('');
+            lines.push('   Resultado:');
+            lines.push('   - Success: ' + result.success);
+            lines.push('   - Message: ' + result.message);
+            
+            if (result.success) {
+              // Verificar que desapareció
+              const newUsers = await mockAPI.getUsers();
+              const stillExists = newUsers.find(u => u.username === 'walterio');
+              if (!stillExists) {
+                lines.push('   ✅ VERIFICADO: walterio fue eliminado correctamente');
+              } else {
+                lines.push('   ⚠️ walterio aún existe en localStorage');
+              }
+            }
+          }
+        } catch (error) {
+          lines.push('   ❌ Error al intentar eliminar: ' + error.message);
+          lines.push('   Stack: ' + error.stack);
+        }
+      }
+      
+      lines.push('');
+      lines.push('========================================');
+      setOutput('output2', lines.join('\n'), 'info');
+    }
+
+    // 3. Debug del Navegador
+    function debugBrowser() {
+      const lines = [];
+      lines.push('🌐 DEBUG DEL NAVEGADOR');
+      lines.push('');
+      lines.push('Navegador:');
+      lines.push('  - User Agent: ' + navigator.userAgent);
+      lines.push('  - Language: ' + navigator.language);
+      lines.push('');
+      lines.push('Ventana:');
+      lines.push('  - Location: ' + window.location.href);
+      lines.push('  - Origin: ' + window.location.origin);
+      lines.push('  - Protocol: ' + window.location.protocol);
+      lines.push('');
+      lines.push('LocalStorage:');
+      const storageKeys = Object.keys(localStorage);
+      lines.push('  - Claves disponibles: ' + storageKeys.join(', '));
+      if (storageKeys.includes('soc_users')) {
+        try {
+          const data = JSON.parse(localStorage.getItem('soc_users'));
+          lines.push('  - soc_users: ' + data.length + ' usuario(s)');
+        } catch (e) {
+          lines.push('  - soc_users: ERROR AL PARSEAR');
+        }
+      }
+      lines.push('');
+      lines.push('SessionStorage:');
+      const sessionKeys = Object.keys(sessionStorage);
+      lines.push('  - Claves disponibles: ' + (sessionKeys.length > 0 ? sessionKeys.join(', ') : '(vacío)'));
+      lines.push('');
+      lines.push('========================================');
+      lines.push('✅ DEBUG COMPLETADO');
+      lines.push('========================================');
+      
+      setOutput('output3', lines.join('\n'), 'info');
+      console.log(lines.join('\n'));
+    }
+
+    // 4. Ver Estado Actual
+    async function checkCurrentState() {
+      const lines = [];
+      lines.push('📊 ESTADO ACTUAL DEL SISTEMA');
+      lines.push('');
+      
+      // Estado de mockAPI
+      lines.push('1. ESTADO DE mockAPI:');
+      if (typeof mockAPI === 'undefined') {
+        lines.push('   ❌ mockAPI NO definido');
+      } else {
+        lines.push('   ✅ mockAPI DEFINIDO');
+        lines.push('   - getUsers: ' + (typeof mockAPI.getUsers === 'function' ? '✅' : '❌'));
+        lines.push('   - createUser: ' + (typeof mockAPI.createUser === 'function' ? '✅' : '❌'));
+        lines.push('   - updateUser: ' + (typeof mockAPI.updateUser === 'function' ? '✅' : '❌'));
+        lines.push('   - deleteUser: ' + (typeof mockAPI.deleteUser === 'function' ? '✅' : '❌'));
+      }
+      
+      // Estado de localStorage
+      lines.push('');
+      lines.push('2. ESTADO DE localStorage:');
+      const stored = localStorage.getItem('soc_users');
+      if (stored) {
+        try {
+          const users = JSON.parse(stored);
+          lines.push('   ✅ soc_users existe');
+          lines.push('   - Cantidad: ' + users.length + ' usuario(s)');
+          lines.push('');
+          lines.push('   Usuarios:');
+          users.forEach(u => {
+            lines.push('     ID: ' + u.id);
+            lines.push('     Username: ' + u.username);
+            lines.push('     Email: ' + u.email);
+            lines.push('     Role: ' + u.role);
+            lines.push('     Active: ' + (u.is_active ? '✅' : '❌'));
+            lines.push('');
+          });
+          
+          // Verificar walterio
+          const walterio = users.find(u => u.username === 'walterio');
+          if (walterio) {
+            lines.push('   ESTADO DE WALTERIO:');
+            lines.push('     ✅ walterio EXISTE');
+            lines.push('     - ID: ' + walterio.id);
+            lines.push('     - Eliminate: ' + (walterio.id !== 1 ? '✅ SÍ' : '❌ NO (admin principal)'));
+          } else {
+            lines.push('   ESTADO DE WALTERIO:');
+            lines.push('     ❌ walterio NO EXISTE');
+          }
+        } catch (e) {
+          lines.push('   ❌ Error al parsear localStorage: ' + e.message);
+        }
+      } else {
+        lines.push('   ⚠️ soc_users NO existe');
+      }
+      
+      // URLs de scripts
+      lines.push('');
+      lines.push('3. SCRIPTS CARGADOS:');
+      document.querySelectorAll('script[src]').forEach(s => {
+        lines.push('   - ' + s.src);
+      });
+      
+      lines.push('');
+      lines.push('========================================');
+      if (typeof mockAPI !== 'undefined' && mockAPI.deleteUser) {
+        lines.push('✅ TODO FUNCIONA - PUEDES ELIMINAR');
+      } else {
+        lines.push('❌ HAY UN PROBLEMA - REVISAR CONSOLA');
+      }
+      lines.push('========================================');
+      
+      setOutput('output4', lines.join('\n'), 'info');
+    }
+
+    // Iniciar con mensaje
+    window.onload = function() {
+      setOutput('output1', '🔧 Test Usuarios listo.\nClick en los botones para probar.', 'warning');
+      console.log('Test Usuarios listo');
+    };
+  </script>
+</body>
+</html>

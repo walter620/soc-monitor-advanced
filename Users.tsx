@@ -8,51 +8,14 @@ import {
   Shield, 
   Mail, 
   Calendar,
+  Eye,
   X,
   CheckCircle2,
   MoreVertical,
   Loader2,
   AlertCircle
 } from 'lucide-react';
-
-// Tipos de datos
-interface User {
-  id: number;
-  username: string;
-  email: string;
-  full_name: string;
-  role: string;
-  is_active?: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-interface UserCreate {
-  username: string;
-  email: string;
-  full_name: string;
-  password: string;
-  role: string;
-}
-
-interface UserUpdate {
-  username?: string;
-  email?: string;
-  full_name?: string;
-  role?: string;
-  is_active?: boolean;
-}
-
-// Configuración API
-const API_BASE_URL = 'http://150.240.162.65:8000';
-
-// Get token de localStorage
-const getAuthToken = () => {
-  if (typeof window !== 'undefined') {
-    return localStorage.getItem('authToken');
-  }
-  return null;
-};
+import { apiService, User, UserCreate, UserUpdate } from '../services/api';
 
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -71,7 +34,6 @@ export default function UsersPage() {
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  // Cargar usuarios al montar
   useEffect(() => {
     loadUsers();
   }, []);
@@ -79,24 +41,10 @@ export default function UsersPage() {
   const loadUsers = async () => {
     try {
       setLoading(true);
-      setError(null);
-      
-      const token = getAuthToken();
-      const response = await fetch(`${API_BASE_URL}/api/v1/users/`, {
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Error al cargar usuarios');
-      }
-
-      const data = await response.json();
+      const data = await apiService.getUsers();
       setUsers(data);
+      setError(null);
     } catch (err: any) {
-      console.error('Error loading users:', err);
       setError(err.message || 'Error al cargar usuarios');
       setUsers([]);
     } finally {
@@ -104,7 +52,6 @@ export default function UsersPage() {
     }
   };
 
-  // Filtrar usuarios
   const filteredUsers = users.filter(user => {
     const matchesSearch = user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -113,11 +60,10 @@ export default function UsersPage() {
     return matchesSearch && matchesRole;
   });
 
-  // Obtener badge del rol
   const getRoleBadge = (role: string) => {
     const roles = {
       admin: { class: 'badge-danger', icon: Shield, label: 'Admin' },
-      analyst: { class: 'badge-info', icon: Shield, label: 'Analyst' },
+      analyst: { class: 'badge-info', icon: Eye, label: 'Analyst' },
       viewer: { class: 'badge-success', icon: CheckCircle2, label: 'Viewer' }
     };
     const { class: badgeClass, icon: Icon, label } = roles[role as keyof typeof roles] || roles.viewer;
@@ -129,7 +75,6 @@ export default function UsersPage() {
     );
   };
 
-  // Formatear fecha
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('es-AR', {
       day: '2-digit',
@@ -138,14 +83,13 @@ export default function UsersPage() {
     });
   };
 
-  // Crear usuario
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setSuccessMessage(null);
 
     try {
-      const userData: UserCreate = {
+      const newUser: UserCreate = {
         username: formData.username!,
         email: formData.email!,
         full_name: formData.full_name!,
@@ -153,33 +97,22 @@ export default function UsersPage() {
         role: formData.role!
       };
 
-      const token = getAuthToken();
-      const response = await fetch(`${API_BASE_URL}/api/v1/users/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify(userData),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Error al crear usuario');
-      }
-
-      const newUser = await response.json();
-      setUsers([...users, newUser]);
+      const createdUser = await apiService.createUser(newUser);
+      setUsers([...users, createdUser]);
       setShowModal(false);
-      resetForm();
+      setFormData({
+        username: '',
+        email: '',
+        full_name: '',
+        password: '',
+        role: 'viewer'
+      });
       setSuccessMessage('Usuario creado exitosamente');
     } catch (err: any) {
-      console.error('Error creating user:', err);
       setError(err.message || 'Error al crear usuario');
     }
   };
 
-  // Actualizar usuario
   const handleUpdateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingUser) return;
@@ -192,66 +125,41 @@ export default function UsersPage() {
         username: formData.username,
         email: formData.email,
         full_name: formData.full_name,
-        role: formData.role as string
+        role: formData.role as string,
+        is_active: formData.role ? true : undefined
       };
 
-      const token = getAuthToken();
-      const response = await fetch(`${API_BASE_URL}/api/v1/users/${editingUser.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify(updateData),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Error al actualizar usuario');
-      }
-
-      const updatedUser = await response.json();
+      const updatedUser = await apiService.updateUser(editingUser.id, updateData);
       setUsers(users.map(u => u.id === editingUser.id ? updatedUser : u));
       setShowModal(false);
       setEditingUser(null);
-      resetForm();
+      setFormData({
+        username: '',
+        email: '',
+        full_name: '',
+        password: '',
+        role: 'viewer'
+      });
       setSuccessMessage('Usuario actualizado exitosamente');
     } catch (err: any) {
-      console.error('Error updating user:', err);
       setError(err.message || 'Error al actualizar usuario');
     }
   };
 
-  // Eliminar usuario
   const handleDeleteUser = async (userId: number) => {
     if (!window.confirm('¿Estás seguro de que quieres eliminar este usuario?')) {
       return;
     }
 
     try {
-      const token = getAuthToken();
-      const response = await fetch(`${API_BASE_URL}/api/v1/users/${userId}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Error al eliminar usuario');
-      }
-
+      await apiService.deleteUser(userId);
       setUsers(users.filter(u => u.id !== userId));
       setSuccessMessage('Usuario eliminado exitosamente');
     } catch (err: any) {
-      console.error('Error deleting user:', err);
       setError(err.message || 'Error al eliminar usuario');
     }
   };
 
-  // Abrir modal para editar
   const openEditModal = (user: User) => {
     setEditingUser(user);
     setFormData({
@@ -263,24 +171,8 @@ export default function UsersPage() {
     setShowModal(true);
   };
 
-  // Abrir modal para crear
   const openCreateModal = () => {
     setEditingUser(null);
-    resetForm();
-    setShowModal(true);
-  };
-
-  // Cerrar modal y resetear
-  const closeModal = () => {
-    setShowModal(false);
-    setEditingUser(null);
-    resetForm();
-    setError(null);
-    setSuccessMessage(null);
-  };
-
-  // Resetear formulario
-  const resetForm = () => {
     setFormData({
       username: '',
       email: '',
@@ -288,6 +180,21 @@ export default function UsersPage() {
       password: '',
       role: 'viewer'
     });
+    setShowModal(true);
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setEditingUser(null);
+    setFormData({
+      username: '',
+      email: '',
+      full_name: '',
+      password: '',
+      role: 'viewer'
+    });
+    setError(null);
+    setSuccessMessage(null);
   };
 
   return (
@@ -335,17 +242,17 @@ export default function UsersPage() {
         <div className="card group">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-text-secondary mb-1">Visualizadores</p>
-              <p className="text-3xl font-bold text-info">{users.filter(u => u.role === 'viewer').length}</p>
+              <p className="text-sm text-text-secondary mb-1">Analistas</p>
+              <p className="text-3xl font-bold text-info">{users.filter(u => u.role === 'analyst').length}</p>
             </div>
             <div className="p-3 bg-blue-500/10 rounded-xl group-hover:bg-blue-500/20 transition-colors">
-              <CheckCircle2 className="w-6 h-6 text-info" />
+              <Eye className="w-6 h-6 text-info" />
             </div>
           </div>
         </div>
       </div>
 
-      {/* Mensajes de error/success */}
+      {/* Messages */}
       {error && (
         <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-xl flex items-center gap-2">
           <AlertCircle className="w-5 h-5" />
@@ -360,7 +267,7 @@ export default function UsersPage() {
         </div>
       )}
 
-      {/* Filtros */}
+      {/* Filters */}
       <div className="card">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           {/* Search */}
@@ -384,8 +291,8 @@ export default function UsersPage() {
             >
               <option value="all">Todos los roles</option>
               <option value="admin">Administradores</option>
-              <option value="viewer">Visualizadores</option>
               <option value="analyst">Analistas</option>
+              <option value="viewer">Visualizadores</option>
             </select>
           </div>
         </div>
@@ -397,17 +304,17 @@ export default function UsersPage() {
             <p className="text-sm text-text-secondary">Admins</p>
           </div>
           <div className="text-center">
-            <p className="text-2xl font-bold text-info">{users.filter(u => u.role === 'viewer').length}</p>
-            <p className="text-sm text-text-secondary">Viewers</p>
+            <p className="text-2xl font-bold text-info">{users.filter(u => u.role === 'analyst').length}</p>
+            <p className="text-sm text-text-secondary">Analysts</p>
           </div>
           <div className="text-center">
-            <p className="text-2xl font-bold text-success">{users.filter(u => u.role === 'analyst').length}</p>
-            <p className="text-sm text-text-secondary">Analysts</p>
+            <p className="text-2xl font-bold text-success">{users.filter(u => u.role === 'viewer').length}</p>
+            <p className="text-sm text-text-secondary">Viewers</p>
           </div>
         </div>
       </div>
 
-      {/* Tabla de Usuarios */}
+      {/* Users Table */}
       <div className="card">
         {loading ? (
           <div className="text-center py-12">
@@ -469,16 +376,17 @@ export default function UsersPage() {
                         <button 
                           onClick={() => openEditModal(user)}
                           className="p-2 hover:bg-border-primary rounded-lg transition-colors text-text-secondary hover:text-yellow-400"
-                          title="Editar"
                         >
                           <Edit2 className="w-4 h-4" />
                         </button>
                         <button 
                           onClick={() => handleDeleteUser(user.id)}
                           className="p-2 hover:bg-border-primary rounded-lg transition-colors text-text-secondary hover:text-red-400"
-                          title="Eliminar"
                         >
                           <Trash2 className="w-4 h-4" />
+                        </button>
+                        <button className="p-2 hover:bg-border-primary rounded-lg transition-colors text-text-secondary hover:text-cyan-400">
+                          <MoreVertical className="w-4 h-4" />
                         </button>
                       </div>
                     </td>
@@ -490,7 +398,7 @@ export default function UsersPage() {
         )}
       </div>
 
-      {/* Modal Crear/Editar Usuario */}
+      {/* Create/Edit Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
           <div className="card w-full max-w-lg">
@@ -517,7 +425,7 @@ export default function UsersPage() {
                   value={formData.full_name || ''}
                   onChange={(e) => setFormData({...formData, full_name: e.target.value})}
                   className="input" 
-                  placeholder="Ej: Walter Rios" 
+                  placeholder="Ej: Juan Pérez" 
                 />
               </div>
 
@@ -548,7 +456,7 @@ export default function UsersPage() {
                   value={formData.username || ''}
                   onChange={(e) => setFormData({...formData, username: e.target.value})}
                   className="input" 
-                  placeholder="walterio" 
+                  placeholder="juan.perez" 
                 />
               </div>
 

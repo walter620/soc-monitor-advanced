@@ -9,21 +9,26 @@ from app.core.config import settings
 
 
 router = APIRouter(prefix="/slack", tags=["slack"])
-
+router = APIRouter(prefix="/slack", tags=["slack"])
 
 # Inicializar bot de Slack (opcional - deshabilitado si no hay tokens)
+slack_app = None
+handler = None
+
 if settings.SLACK_BOT_TOKEN and settings.SLACK_SIGNING_SECRET:
     from slack_bolt import App
     from slack_bolt.adapter.fastapi import SlackRequestHandler
     
-    slack_app = App(
-        token=settings.SLACK_BOT_TOKEN,
-        signing_secret=settings.SLACK_SIGNING_SECRET
-    )
-    handler = SlackRequestHandler(slack_app)
-else:
-    slack_app = None
-    handler = None
+    try:
+        slack_app = App(
+            token=settings.SLACK_BOT_TOKEN,
+            signing_secret=settings.SLACK_SIGNING_SECRET
+        )
+        handler = SlackRequestHandler(slack_app)
+    except Exception as e:
+        print(f"Warning: Failed to initialize Slack app: {e}")
+        slack_app = None
+        handler = None
 
 
 @router.post("/events")
