@@ -1,351 +1,699 @@
-# API Documentation - SOC Monitor Advanced
+# SOC Monitor API v1 - Documentación de Endpoints
 
-## 📡 Base URL
-
-```
-Development: http://localhost:8000
-Production:  https://api.soc-monitor.com
-```
-
-## 📚 Endpoints
-
-### Autenticación
-
-#### Register
-```http
-POST /api/v1/auth/register
-Content-Type: application/json
-
-{
-  "username": "newuser",
-  "email": "user@example.com",
-  "password": "securepassword",
-  "full_name": "User Full Name",
-  "role": "operator"
-}
-```
-
-**Response:** `201 Created`
-```json
-{
-  "id": 1,
-  "username": "newuser",
-  "email": "user@example.com",
-  "full_name": "User Full Name",
-  "role": "operator",
-  "is_active": true,
-  "created_at": "2026-06-02T10:00:00"
-}
-```
-
-#### Login
-```http
-POST /api/v1/auth/login
-Content-Type: application/x-www-form-urlencoded
-
-username=admin&password=admin123
-```
-
-**Response:** `200 OK`
-```json
-{
-  "access_token": "eyJ0eXAiOiJKV1QiLCJhbGc...",
-  "token_type": "bearer",
-  "expires_in": 1800
-}
-```
-
-#### Get Current User
-```http
-GET /api/v1/auth/me
-Authorization: Bearer <token>
-```
-
-**Response:** `200 OK`
+> **Versión:** 2.0.0  
+> **Base URL:** `http://localhost:8000/api/v1`  
+> **Fecha:** 06-JUN-2026  
+> **Formato:** OpenAPI 3.0
 
 ---
 
-### Reportes
+## 🚀 Autenticación
 
-#### Create Report
-```http
-POST /api/v1/reports
-Authorization: Bearer <token>
-Content-Type: application/json
+### Obtener Token JWT
 
+**Endpoint:** `POST /auth/login`
+
+**Descripción:** Autenticar usuario y obtener token de acceso.
+
+**ContentType:** `application/x-www-form-urlencoded`
+
+**Parámetros de Form:**
+| Campo | Tipo | Requerido | Descripción |
+|-------|------|-----------|-------------|
+| `username` | string | Sí | Nombre de usuario |
+| `password` | string | Sí | Contraseña |
+
+**Ejemplo de Request:**
+```bash
+curl -X POST "http://localhost:8000/api/v1/auth/login" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "username=admin&password=admin123"
+```
+
+**Response (200 OK):**
+```json
 {
-  "shift_date": "2026-06-02T08:00:00",
-  "start_time": "2026-06-02T08:00:00",
-  "end_time": "2026-06-02T20:00:00",
-  "summary": "Resumen de actividades del turno",
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token_type": "bearer",
+  "username": "admin",
+  "role": "admin"
+}
+```
+
+**Response (401 Unauthorized):**
+```json
+{
+  "detail": "Nombre de usuario o contraseña incorrectos"
+}
+```
+
+---
+
+### Registrar Nuevo Usuario
+
+**Endpoint:** `POST /auth/register`
+
+**Descripción:** Crear nueva cuenta de usuario.
+
+**ContentType:** `application/json`
+
+**Body:**
+```json
+{
+  "username": "nuevo_usuario",
+  "email": "usuario@example.com",
+  "password": "password123",
+  "full_name": "Juan Pérez",
+  "role": "operator"  // opcional, default: "operator"
+}
+```
+
+**Validaciones:**
+- Username: único, 3-80 caracteres
+- Email: válido, único
+- Password: mínimo 6 caracteres
+- full_name: obligatorio
+
+**Response (201 Created):**
+```json
+{
+  "id": 1,
+  "username": "nuevo_usuario",
+  "email": "usuario@example.com",
+  "full_name": "Juan Pérez",
+  "role": "operator",
+  "is_active": true,
+  "created_at": "2026-06-06T10:30:00Z",
+  "slack_user_id": null
+}
+```
+
+**Response (400 Bad Request):**
+```json
+{
+  "detail": "El nombre de usuario ya existe"
+}
+```
+
+---
+
+## 👥 Gestión de Usuarios
+
+### Listar Usuarios
+
+**Endpoint:** `GET /users`
+
+**Descripción:** Obtener lista de usuarios (solo admin).
+
+**Headers:**
+```
+Authorization: Bearer <token>
+```
+
+**Response (200 OK):**
+```json
+[
+  {
+    "id": 1,
+    "username": "admin",
+    "email": "admin@local",
+    "full_name": "Admin User",
+    "role": "admin",
+    "is_active": true,
+    "created_at": "2026-06-01T00:00:00Z",
+    "slack_user_id": "U123456"
+  },
+  {
+    "id": 2,
+    "username": "analista",
+    "email": "analista@local",
+    "full_name": "Juan Analista",
+    "role": "operator",
+    "is_active": true,
+    "created_at": "2026-06-02T00:00:00Z",
+    "slack_user_id": null
+  }
+]
+```
+
+---
+
+### Obtener Usuario por ID
+
+**Endpoint:** `GET /users/{user_id}`
+
+**Descripción:** Obtener detalles de un usuario específico.
+
+**Path Parameters:**
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| `user_id` | integer | ID del usuario |
+
+**Response (200 OK):**
+```json
+{
+  "id": 1,
+  "username": "admin",
+  "email": "admin@local",
+  "full_name": "Admin User",
+  "role": "admin",
+  "is_active": true,
+  "created_at": "2026-06-01T00:00:00Z",
+  "updated_at": "2026-06-01T00:00:00Z",
+  "last_login": "2026-06-06T09:00:00Z",
+  "slack_user_id": "U123456"
+}
+```
+
+**Response (404 Not Found):**
+```json
+{
+  "detail": "Usuario no encontrado"
+}
+```
+
+---
+
+## 📊 Gestión de Reportes
+
+### Listar Reportes
+
+**Endpoint:** `GET /reports`
+
+**Descripción:** Obtener lista de reportes con paginación.
+
+**Query Parameters:**
+| Parámetro | Tipo | Default | Descripción |
+|-----------|------|---------|-------------|
+| `skip` | integer | 0 | Número de registros a saltar |
+| `limit` | integer | 100 | Máximo de registros a retornar |
+
+**Headers:**
+```
+Authorization: Bearer <token>
+```
+
+**Response (200 OK):**
+```json
+[
+  {
+    "id": 1,
+    "status": "completed",
+    "severity": 3,
+    "summary": "Monitoreo de firewall sin incidentes críticos...",
+    "created_at": "2026-06-06T08:00:00Z"
+  },
+  {
+    "id": 2,
+    "status": "pending",
+    "severity": 7,
+    "summary": "Detección de intentos de login fallidos...",
+    "created_at": "2026-06-06T09:00:00Z"
+  }
+]
+```
+
+**Permisos:**
+- **Admin**: Todos los reportes
+- **Supervisor**: Reportes de operadores bajo su supervisión
+- **Operator**: Solo sus propios reportes
+
+---
+
+### Obtener Reporte por ID
+
+**Endpoint:** `GET /reports/{report_id}`
+
+**Descripción:** Obtener detalles completos de un reporte.
+
+**Path Parameters:**
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| `report_id` | integer | ID del reporte |
+
+**Response (200 OK):**
+```json
+{
+  "id": 1,
+  "operator_id": 2,
+  "shift_date": "2026-06-06T00:00:00Z",
+  "start_time": "2026-06-06T08:00:00Z",
+  "end_time": "2026-06-06T16:00:00Z",
+  "summary": "Monitoreo de firewall sin incidentes críticos durante el turno matutino",
+  "status": "completed",
+  "severity": 2,
+  "sla_deadline": "2026-06-06T20:00:00Z",
+  "sla_violated": false,
+  "auto_escalated": false,
   "novedades": [
     {
-      "description": "Alerta de firewall bloqueada",
-      "severity": 7,
-      "qradar_alerts": "12345, 12346",
-      "notified": true
+      "timestamp": "2026-06-06T10:30:00Z",
+      "description": "Escaneo de vulnerabilidades completado",
+      "severity": "low"
     }
   ],
   "logs_revisados": [
+    "/var/log/auth.log - Revisión completa",
+    "/var/log/syslog - 2 alertas menores"
+  ],
+  "created_at": "2026-06-06T16:30:00Z",
+  "updated_at": "2026-06-06T17:00:00Z"
+}
+```
+
+---
+
+### Crear Nuevo Reporte
+
+**Endpoint:** `POST /reports`
+
+**Descripción:** Crear un nuevo reporte de turno.
+
+**Headers:**
+```
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+**Body:**
+```json
+{
+  "shift_date": "2026-06-06T00:00:00Z",
+  "start_time": "2026-06-06T08:00:00Z",
+  "end_time": "2026-06-06T16:00:00Z",
+  "summary": "Turno de monitoreo de seguridad - Sin incidentes críticos",
+  "status": "draft",  // draft, pending, approved, closed
+  "severity": 2,  // 0-10
+  "novedades": [
     {
-      "description": "Proceso sshd normal",
-      "level": "INFO",
-      "source": "Firewall",
-      "action_taken": true
+      "timestamp": "2026-06-06T10:30:00Z",
+      "description": "Revisión de logs completada"
+    }
+  ],
+  "logs_revisados": [
+    "/var/log/auth.log",
+    "/var/log/syslog"
+  ]
+}
+```
+
+**Validaciones:**
+- `end_time` debe ser posterior a `start_time`
+- `severity` debe estar entre 0-10
+- `summary` es obligatorio
+
+**Response (201 Created):**
+```json
+{
+  "id": 3,
+  "status": "draft",
+  "severity": 2,
+  "summary": "Turno de monitoreo de seguridad - Sin incidentes críticos",
+  "created_by": "analista"
+}
+```
+
+---
+
+### Actualizar Reporte
+
+**Endpoint:** `PUT /reports/{report_id}`
+
+**Descripción:** Actualizar un reporte existente.
+
+**Headers:**
+```
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+**Path Parameters:**
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| `report_id` | integer | ID del reporte |
+
+**Body (parciales permitidos):**
+```json
+{
+  "summary": "Turno actualizado - Se detectó 1 alerta menor",
+  "status": "pending",
+  "severity": 4,
+  "novedades": [
+    {
+      "timestamp": "2026-06-06T11:00:00Z",
+      "description": "Alerta de firewall actualizada"
     }
   ]
 }
 ```
 
-#### List Reports
-```http
-GET /api/v1/reports?skip=0&limit=100
-Authorization: Bearer <token>
-```
-
-#### Get Report
-```http
-GET /api/v1/reports/{report_id}
-Authorization: Bearer <token>
-```
-
-**Response:** `200 OK`
+**Response (200 OK):**
 ```json
 {
   "id": 1,
-  "operator_id": 1,
-  "shift_date": "2026-06-02T08:00:00",
   "status": "pending",
-  "severity": 7,
-  "sla_violated": false,
-  "novedades": [...],
-  "logs_revisados": [...]
+  "message": "Reporte actualizado exitosamente"
 }
 ```
 
-#### Update Report
-```http
-PUT /api/v1/reports/{report_id}
-Authorization: Bearer <token>
-Content-Type: application/json
-
+**Response (403 Forbidden):**
+```json
 {
-  "status": "approved",
-  "summary": "Nuevo resumen actualizado"
+  "detail": "No tienes permisos para actualizar este reporte"
 }
 ```
-
-#### Delete Report
-```http
-DELETE /api/v1/reports/{report_id}
-Authorization: Bearer <token>
-```
-
-**Response:** `204 No Content`
 
 ---
 
-### Estadísticas
+### Eliminar Reporte
 
-#### Dashboard Stats
-```http
-GET /api/v1/stats/dashboard
+**Endpoint:** `DELETE /reports/{report_id}`
+
+**Descripción:** Eliminar un reporte (solo admin o creador).
+
+**Headers:**
+```
 Authorization: Bearer <token>
 ```
 
-**Response:** `200 OK`
+**Path Parameters:**
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| `report_id` | integer | ID del reporte |
+
+**Response (204 No Content):**
+```
+(no content)
+```
+
+**Response (403 Forbidden):**
 ```json
 {
-  "total_reports": 150,
-  "by_status": {
-    "draft": 5,
-    "pending": 12,
-    "approved": 89,
-    "closed": 44
-  },
-  "sla_violated": 3,
-  "high_severity": 8
+  "detail": "No tienes permisos para eliminar este reporte"
 }
 ```
 
-#### Top Offenses
-```http
-GET /api/v1/stats/top-offenses?days=30
+**Response (404 Not Found):**
+```json
+{
+  "detail": "Reporte no encontrado"
+}
+```
+
+---
+
+## 📈 Estadísticas
+
+### Dashboard Statistics
+
+**Endpoint:** `GET /stats/dashboard`
+
+**Descripción:** Obtener estadísticas generales del dashboard.
+
+**Headers:**
+```
 Authorization: Bearer <token>
 ```
 
-**Response:** `200 OK`
+**Response (200 OK):**
+```json
+{
+  "total_reports": 156,
+  "pending_reports": 12,
+  "completed_reports": 144,
+  "avg_severity": 2.8,
+  "trend": 12.5,
+  "sla_violations": 3,
+  "high_severity_alerts": 5
+}
+```
+
+---
+
+### Trends Data
+
+**Endpoint:** `GET /stats/trends`
+
+**Descripción:** Obtener datos de tendencias temporales.
+
+**Query Parameters:**
+| Parámetro | Tipo | Default | Descripción |
+|-----------|------|---------|-------------|
+| `period` | string | `7d` | `7d`, `30d`, `90d` |
+
+**Response (200 OK):**
 ```json
 [
-  {"severity": 8, "count": 15},
-  {"severity": 7, "count": 28},
-  {"severity": 5, "count": 45}
+  {
+    "date": "2026-05-30",
+    "reports_count": 12,
+    "avg_severity": 2.5,
+    "alerts": 45,
+    "resolved": 42
+  },
+  {
+    "date": "2026-05-31",
+    "reports_count": 10,
+    "avg_severity": 3.1,
+    "alerts": 38,
+    "resolved": 36
+  }
 ]
 ```
 
-#### SLA Compliance
-```http
-GET /api/v1/stats/sla-compliance?days=30
+---
+
+## 🔔 Slack Integration
+
+### Webhook de Eventos
+
+**Endpoint:** `POST /slack/webhook`
+
+**Descripción:** Recibir eventos de Slack.
+
+**Headers:**
+```
+Content-Type: application/json
+X-Slack-Signature: sha256=...  // Signing secret verification
+X-Slack-Request-Timestamp: 1234567890
+```
+
+**Body (ejemplo de slash command):**
+```json
+{
+  "token": "Slack_verification_token",
+  "team_id": "T123456",
+  "command": "/soc_status",
+  "response_url": "https://hooks.slack.com/commands/...",
+  "user_id": "U123456",
+  "user_name": "analista",
+  "channel_id": "C123456",
+  "channel_name": "soc-monitor"
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "text": "✅ Sistema SOC Monitor en línea\n📊 Estado: Operativo",
+  "response_type": "in_channel"
+}
+```
+
+---
+
+### Notificación de Alerta
+
+**Endpoint:** `POST /slack/alert`
+
+**Descripción:** Enviar alerta de alta severidad a Slack.
+
+**Headers:**
+```
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+**Body:**
+```json
+{
+  "report_id": 1,
+  "severity": 8,
+  "message": "Se detectó 50 intentos de login fallidos en el firewall",
+  "channel": "C123456"  // opcional
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "status": "sent",
+  "channel": "C123456",
+  "timestamp": "2026-06-06T10:30:00Z"
+}
+```
+
+---
+
+## 🔍 Health Check
+
+### Verificar Estado de la API
+
+**Endpoint:** `GET /health`
+
+**Descripción:** Endpoint de health check sin autenticación.
+
+**Response (200 OK):**
+```json
+{
+  "status": "healthy",
+  "app": "SOC Monitor",
+  "version": "2.0.0"
+}
+```
+
+---
+
+## 📚 Schema Definitions
+
+### User (Response)
+```json
+{
+  "id": 1,
+  "username": "admin",
+  "email": "admin@local",
+  "full_name": "Admin User",
+  "role": "admin",  // admin, supervisor, operator
+  "is_active": true,
+  "created_at": "2026-06-01T00:00:00Z",
+  "updated_at": "2026-06-01T00:00:00Z",
+  "last_login": "2026-06-06T09:00:00Z",
+  "slack_user_id": "U123456"
+}
+```
+
+### Report (Full Response)
+```json
+{
+  "id": 1,
+  "operator_id": 2,
+  "shift_date": "2026-06-06T00:00:00Z",
+  "start_time": "2026-06-06T08:00:00Z",
+  "end_time": "2026-06-06T16:00:00Z",
+  "summary": "Monitoreo de firewall sin incidentes críticos",
+  "status": "completed",  // draft, pending, approved, closed
+  "severity": 2,  // 0-10
+  "sla_deadline": "2026-06-06T20:00:00Z",
+  "sla_violated": false,
+  "auto_escalated": false,
+  "novedades": [],  // array of objects
+  "logs_revisados": [],  // array of strings
+  "critical_cases": null,  // array of objects
+  "resolution_time_minutes": null,
+  "false_positive_rate": null,
+  "escalation_count": 0,
+  "tuning_suggestions": 0,
+  "created_at": "2026-06-06T16:30:00Z",
+  "updated_at": "2026-06-06T17:00:00Z"
+}
+```
+
+### Token
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token_type": "bearer",
+  "username": "admin",
+  "role": "admin"
+}
+```
+
+---
+
+## 🛡️ Seguridad
+
+### Headers Requeridos
+
+**Autenticación:**
+```
 Authorization: Bearer <token>
 ```
 
-**Response:** `200 OK`
-```json
-{
-  "period_days": 30,
-  "total_with_sla": 45,
-  "violated": 3,
-  "compliance_rate": 93.33
-}
+**Slack Verification:**
 ```
-
----
-
-### Slack Integration
-
-#### Events Webhook
-```http
-POST /api/v1/slack/events
 Content-Type: application/json
-X-Slack-Signature: v0=...
-X-Slack-Request-Timestamp: 1234567890
-
-{
-  "token": "slack-webhook-token",
-  "team_id": "T123456",
-  "api_app_id": "A123456",
-  "event": {
-    "type": "message",
-    "text": "!soc help",
-    "user": "U123456",
-    "channel": "C123456"
-  }
-}
+X-Slack-Signature: sha256=<signature>
+X-Slack-Request-Timestamp: <timestamp>
 ```
 
-#### Slash Commands
+### Code Status Codes
 
-**/soc_status**
-```
-/post /api/v1/slack/events
-{
-  "command": "/soc_status",
-  "text": "",
-  "user_name": "john.doe",
-  "channel_name": "#soc-alerts"
-}
-```
-
-**/soc_alerts**
-```
-/post /api/v1/slack/events
-{
-  "command": "/soc_alerts",
-  "text": "",
-  "user_name": "john.doe",
-  "channel_name": "#soc-alerts"
-}
-```
-
----
-
-## 🔐 Autenticación
-
-### JWT Token Flow
-
-1. **Login** obtiene access token
-2. **Use token** en Authorization header
-3. **Token expiration** es 30 minutos
-4. **Refresh** con nuevo login cuando expira
-
-### Headers
-```
-Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGc...
-```
-
----
-
-## ⚠️ Errores
-
-### Response Codes
-
-| Code | Descripción |
-|------|-------------|
+| Código | Descripción |
+|--------|-------------|
 | 200 | OK - Request exitoso |
 | 201 | Created - Recurso creado |
-| 204 | No Content - Eliminado exitosamente |
-| 400 | Bad Request - Request inválido |
-| 401 | Unauthorized - Sin autenticación |
-| 403 | Forbidden - Sin permisos |
-| 404 | Not Found - Recurso no encontrado |
-| 409 | Conflict - Recurso existente |
+| 204 | No Content - Eliminación exitosa |
+| 400 | Bad Request - Datos inválidos |
+| 401 | Unauthorized - Autenticación requerida |
+| 403 | Forbidden - Permisos insuficientes |
+| 404 | Not Found - Recurso no existe |
+| 422 | Unprocessable Entity - Validación fallida |
 | 500 | Internal Server Error - Error del servidor |
 
-### Error Response Format
-```json
-{
-  "detail": "Mensaje de error",
-  "status_code": 400,
-  "details": {}
-}
-```
-
 ---
 
-## 🧪 Testing
+## 🧪 Testing con cURL
 
-### Ejecutar Tests
+### Ejemplo Completo: Crear y Listar Reportes
+
 ```bash
-# Ejecutar todos los tests
-pytest tests/ -v
+# 1. Login
+TOKEN=$(curl -X POST "http://localhost:8000/api/v1/auth/login" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "username=admin&password=admin123" | \
+  jq -r '.access_token')
 
-# Con cobertura
-pytest tests/ -v --cov=app --cov-report=html
-```
+# 2. Crear reporte
+curl -X POST "http://localhost:8000/api/v1/reports" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "shift_date": "2026-06-06T00:00:00Z",
+    "start_time": "2026-06-06T08:00:00Z",
+    "end_time": "2026-06-06T16:00:00Z",
+    "summary": "Turno de monitoreo - Sin incidentes",
+    "severity": 2
+  }'
 
-### Ejemplo de Test
-```python
-import pytest
-from httpx import AsyncClient
+# 3. Listar reportes
+curl -X GET "http://localhost:8000/api/v1/reports" \
+  -H "Authorization: Bearer $TOKEN"
 
-@pytest.mark.asyncio
-async def test_login_endpoint():
-    async with AsyncClient() as client:
-        response = await client.post(
-            "http://localhost:8000/api/v1/auth/login",
-            data={"username": "admin", "password": "admin123"}
-        )
-        assert response.status_code == 200
-        data = response.json()
-        assert "access_token" in data
+# 4. Obtener reporte
+curl -X GET "http://localhost:8000/api/v1/reports/1" \
+  -H "Authorization: Bearer $TOKEN"
+
+# 5. Actualizar reporte
+curl -X PUT "http://localhost:8000/api/v1/reports/1" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"status": "completed"}'
+
+# 6. Obtener estadísticas
+curl -X GET "http://localhost:8000/api/v1/stats/dashboard" \
+  -H "Authorization: Bearer $TOKEN"
 ```
 
 ---
 
-## 📊 Rate Limiting
+## 📖 Recursos Adicionales
 
-### Límites Actuales
-- 100 requests/minute por IP
-- 1000 requests/day por user
-
-### Headers de Rate Limit
-```
-X-RateLimit-Limit: 100
-X-RateLimit-Remaining: 95
-X-RateLimit-Reset: 1234567890
-```
+- [OpenAPI Specification](http://localhost:8000/openapi.json)
+- [Swagger UI](http://localhost:8000/docs)
+- [Redoc](http://localhost:8000/redoc)
 
 ---
 
-## 📅 Versionado
-
-### Current Version: v1
-- `/api/v1/` - Version actual
-- `deprecation-headers` - Para endpoints legacy
-- `changelog` - Documentar cambios mayores
-
----
-
-**Documentación Generada:** 02/06/2026  
-**API Version:** 1.0.0  
-**Base:** FastAPI OpenAPI 3.0
+**Última actualización:** 06-JUN-2026  
+**Versión:** 2.0.0  
+**API Status:** Production Ready ✅
