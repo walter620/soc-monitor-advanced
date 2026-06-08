@@ -3,7 +3,7 @@ version: '3.8'
 services:
   api:
     build:
-      context: ./api
+      context: .
       dockerfile: Dockerfile
     container_name: soc-monitor-advanced-api
     ports:
@@ -19,14 +19,15 @@ services:
       - soc-network
 
   web:
-    image: python:3.11-slim
+    image: node:20-alpine
     container_name: soc-monitor-advanced-web
     working_dir: /app
     volumes:
       - ./web:/app
+      - /app/node_modules  # Evitar montar node_modules del host
     ports:
-      - "3000:9090"
-    command: python3 -m http.server 9090 --directory /app
+      - "3000:5173"  # Vite corre en puerto 5173, mapeado a 3000
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
     restart: unless-stopped
     networks:
       - soc-network
