@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Login SOC Monitor</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #0f172a;
+      color: #f9fafb;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      background: #1e293b;
+      padding: 40px;
+      border-radius: 12px;
+      max-width: 450px;
+      width: 100%;
+    }
+    h1 {
+      color: #06b6d4;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      margin-bottom: 8px;
+      color: #9ca3af;
+    }
+    input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #374151;
+      border-radius: 6px;
+      background: #111827;
+      color: #f9fafb;
+      font-size: 16px;
+    }
+    input:focus {
+      outline: none;
+      border-color: #06b6d4;
+    }
+    button {
+      width: 100%;
+      padding: 14px;
+      background: #06b6d4;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    button:hover {
+      background: #0891b2;
+    }
+    .message {
+      padding: 12px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      display: none;
+    }
+    .error {
+      background: rgba(239, 68, 68, 0.2);
+      color: #fca5a5;
+      border: 1px solid #ef4444;
+    }
+    .success {
+      background: rgba(16, 185, 129, 0.2);
+      color: #6ee7b7;
+      border: 1px solid #10b981;
+    }
+    .info {
+      background: rgba(15, 23, 42, 0.5);
+      padding: 15px;
+      border-radius: 6px;
+      margin-top: 20px;
+    }
+    .user-list {
+      margin-top: 10px;
+    }
+    .user-item {
+      padding: 8px;
+      background: #374151;
+      border-radius: 4px;
+      margin: 5px 0;
+      font-size: 14px;
+    }
+    pre {
+      background: #111827;
+      padding: 10px;
+      border-radius: 4px;
+      overflow-x: auto;
+      font-size: 12px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .btn-secondary {
+      background: #374151;
+      margin-top: 10px;
+    }
+    .btn-secondary:hover {
+      background: #4b5563;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🛡️ SOC Monitor Login</h1>
+    
+    <div id="message" class="message"></div>
+    
+    <form id="loginForm">
+      <div class="form-group">
+        <label for="username">Usuario:</label>
+        <input type="text" id="username" name="username" autocomplete="username" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="password">Contraseña:</label>
+        <input type="password" id="password" name="password" autocomplete="current-password" required>
+      </div>
+      
+      <button type="submit" id="submitBtn">🔐 Entrar</button>
+    </form>
+    
+    <div class="info">
+      <h3>📋 Usuarios disponibles:</h3>
+      <div id="userList" class="user-list"></div>
+      <button class="btn-secondary" onclick="refreshUsers()">🔄 Actualizar</button>
+      <button class="btn-secondary" onclick="createTestUser()">✅ Crear alejo</button>
+      <button class="btn-secondary" onclick="runDiagnostic()">🔍 Diagnosticar</button>
+    </div>
+    
+    <div class="info">
+      <h3>📊 Debug:</h3>
+      <pre id="debugOutput">Click en "Diagnosticar"</pre>
+    </div>
+  </div>
+
+  <script>
+    const USERS_KEY = 'soc_monitor_api_users';
+    
+    // Al cargar, refrescar usuarios
+    window.onload = function() {
+      refreshUsers();
+    };
+    
+    function refreshUsers() {
+      const userListDiv = document.getElementById('userList');
+      const usersData = localStorage.getItem(USERS_KEY);
+      
+      if (!usersData) {
+        userListDiv.innerHTML = '<div style="color: #ef4444;">No hay usuarios</div>';
+        return;
+      }
+      
+      try {
+        const users = JSON.parse(usersData);
+        if (users.length === 0) {
+          userListDiv.innerHTML = '<div>No hay usuarios</div>';
+          return;
+        }
+        
+        userListDiv.innerHTML = users.map(u => {
+          const hasPass = u.password && u.password.trim() !== '';
+          return '<div class="user-item"><strong>' + u.username + '</strong> - ' + (hasPass ? '✅' : '❌') + ' ' + u.role + '</div>';
+        }).join('');
+      } catch (e) {
+        userListDiv.innerHTML = '<div style="color: #ef4444;">Error: ' + e.message + '</div>';
+      }
+    }
+    
+    function createTestUser() {
+      const usersData = localStorage.getItem(USERS_KEY);
+      let users = usersData ? JSON.parse(usersData) : [];
+      
+      const existingIndex = users.findIndex(u => u.username === 'alejo');
+      
+      if (existingIndex >= 0) {
+        users[existingIndex].password = 'alejo123';
+        users[existingIndex].role = 'operator';
+        users[existingIndex].updated_at = new Date().toISOString();
+        alert('✅ Usuario "alejo" ACTUALIZADO con contraseña: alejo123');
+      } else {
+        const newId = users.length > 0 ? Math.max(...users.map(u => u.id)) + 1 : 1;
+        users.push({
+          id: newId,
+          username: 'alejo',
+          full_name: 'Alejo Usuario',
+          email: 'alejo@test.com',
+          password: 'alejo123',
+          role: 'operator',
+          is_active: true,
+          created_at: new Date().toISOString()
+        });
+        alert('✅ Usuario "alejo" CREADO con contraseña: alejo123');
+      }
+      
+      localStorage.setItem(USERS_KEY, JSON.stringify(users));
+      refreshUsers();
+      addLog('✅ Usuario "alejo" creado/actualizado');
+      
+      // Prellenar formulario
+      document.getElementById('username').value = 'alejo';
+      document.getElementById('password').value = 'alejo123';
+    }
+    
+    function runDiagnostic() {
+      const debugOutput = document.getElementById('debugOutput');
+      debugOutput.innerHTML = '';
+      
+      addLog('='.repeat(60));
+      addLog('🔍 DIAGNÓSTICO');
+      addLog('='.repeat(60));
+      
+      // Listar todas las claves
+      addLog('\\nClaves en localStorage:');
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        addLog('  - ' + key);
+      }
+      
+      // Verificar usuarios
+      const usersData = localStorage.getItem(USERS_KEY);
+      if (!usersData) {
+        addLog('\\n❌ NO HAY USUARIOS EN ' + USERS_KEY);
+        return;
+      }
+      
+      try {
+        const users = JSON.parse(usersData);
+        addLog('\\n✅ Usuarios en ' + USERS_KEY + ': ' + users.length);
+        
+        users.forEach(u => {
+          addLog('\\n  ID: ' + u.id);
+          addLog('  Username: "' + u.username + '"');
+          addLog('  Password: "' + (u.password || '(vacío)') + '"');
+          addLog('  Role: ' + u.role);
+        });
+      } catch (e) {
+        addLog('\\n❌ Error: ' + e.message);
+      }
+      
+      addLog('\\n' + '='.repeat(60));
+    }
+    
+    function addLog(msg) {
+      const debugOutput = document.getElementById('debugOutput');
+      const line = document.createElement('div');
+      line.textContent = '[' + new Date().toLocaleTimeString() + '] ' + msg;
+      debugOutput.appendChild(line);
+      debugOutput.scrollTop = debugOutput.scrollHeight;
+    }
+    
+    function showMessage(text, type) {
+      const msgDiv = document.getElementById('message');
+      msgDiv.textContent = text.replace(/\\n/g, '\\n');
+      msgDiv.className = 'message ' + type;
+      msgDiv.style.display = 'block';
+      
+      setTimeout(() => {
+        msgDiv.style.display = 'none';
+      }, 5000);
+    }
+    
+    document.getElementById('loginForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+      const submitBtn = document.getElementById('submitBtn');
+      
+      addLog('='.repeat(60));
+      addLog('🔐 INTENTO DE LOGIN');
+      addLog('Username: "' + username + '"');
+      addLog('Password: "' + password + '"');
+      
+      submitBtn.disabled = true;
+      submitBtn.textContent = '⏳ Verificando...';
+      
+      setTimeout(function() {
+        const usersData = localStorage.getItem(USERS_KEY);
+        addLog('\\n📦 Obteniendo usuarios...');
+        
+        if (!usersData) {
+          addLog('❌ NO HAY DATOS');
+          showMessage('❌ No hay usuarios registrados', 'error');
+          submitBtn.disabled = false;
+          submitBtn.textContent = '🔐 Entrar';
+          return;
+        }
+        
+        addLog('✅ Datos encontrados');
+        
+        let users;
+        try {
+          users = JSON.parse(usersData);
+        } catch (e) {
+          addLog('❌ Error parseando JSON: ' + e.message);
+          showMessage('❌ Error: Datos corruptos', 'error');
+          submitBtn.disabled = false;
+          submitBtn.textContent = '🔐 Entrar';
+          return;
+        }
+        
+        addLog('📊 Total usuarios: ' + users.length);
+        
+        const allUsernames = users.map(u => u.username);
+        addLog('👥 Usuarios: ' + allUsernames.join(', '));
+        
+        // Buscar usuario (case-insensitive)
+        const user = users.find(u => u.username.toLowerCase() === username.toLowerCase());
+        addLog('\\n🔍 Buscando: "' + username + '"');
+        addLog('🎯 Encontrado: ' + (user ? 'SÍ' : 'NO'));
+        
+        if (!user) {
+          addLog('\\n❌ USUARIO NO ENCONTRADO');
+          showMessage('❌ Usuario no encontrado: "' + username + '"\\n\\nUsuarios disponibles: ' + allUsernames.join(', '), 'error');
+          submitBtn.disabled = false;
+          submitBtn.textContent = '🔐 Entrar';
+          return;
+        }
+        
+        addLog('\\n✅ Usuario encontrado: ' + user.username);
+        addLog('Password en DB: "' + (user.password || '(vacío)') + '"');
+        addLog('Password ingresado: "' + password + '"');
+        
+        // Verificar password
+        if (!user.password || user.password.trim() === '') {
+          addLog('\\n❌ SIN PASSWORD');
+          showMessage('❌ El usuario "' + user.username + '" no tiene contraseña', 'error');
+          submitBtn.disabled = false;
+          submitBtn.textContent = '🔐 Entrar';
+          return;
+        }
+        
+        if (user.password !== password) {
+          addLog('\\n❌ PASSWORD INCORRECTA');
+          showMessage('❌ Contraseña incorrecta\\n\\nSistema: "' + user.password + '"\\nIngresada: "' + password + '"', 'error');
+          submitBtn.disabled = false;
+          submitBtn.textContent = '🔐 Entrar';
+          return;
+        }
+        
+        // ¡LOGIN EXITOSO!
+        addLog('\\n✅ ✅ ✅ PASSWORD CORRECTA!');
+        addLog('🔐 Creando sesión...');
+        
+        localStorage.setItem('soc_auth_token', 'token_' + Date.now());
+        localStorage.setItem('soc_user', user.username);
+        localStorage.setItem('soc_user_role', user.role || 'operator');
+        
+        addLog('✅ Sesión creada');
+        showMessage('✅ ¡Bienvenido, ' + (user.full_name || user.username) + '!', 'success');
+        
+        setTimeout(function() {
+          addLog('🚪 Redirigiendo a dashboard.html...');
+          window.location.href = 'dashboard.html';
+        }, 1000);
+        
+      }, 500);
+    });
+  </script>
+</body>
+</html>

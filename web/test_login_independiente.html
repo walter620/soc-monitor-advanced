@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Prueba Independiente - SOC Monitor</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #0f172a, #1e293b);
+      min-height: 100vh;
+      padding: 40px;
+      color: #f9fafb;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    h1 { color: #06b6d4; margin-bottom: 10px; }
+    .subtitle { color: #9ca3af; margin-bottom: 30px; }
+    .section {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .section h2 { color: #f9fafb; margin-bottom: 15px; font-size: 1.1rem; }
+    .btn {
+      padding: 12px 24px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin: 8px;
+    }
+    .btn-primary { background: linear-gradient(135deg, #06b6d4, #0891b2); color: white; }
+    .btn-success { background: linear-gradient(135deg, #10b981, #059669); color: white; }
+    .btn-danger { background: linear-gradient(135deg, #ef4444, #dc2626); color: white; }
+    .btn-warning { background: linear-gradient(135deg, #f59e0b, #d97706); color: white; }
+    .status {
+      padding: 15px;
+      border-radius: 8px;
+      margin: 10px 0;
+    }
+    .status.success { background: rgba(16, 185, 129, 0.2); border: 1px solid rgba(16, 185, 129, 0.4); }
+    .status.error { background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.4); }
+    .status.info { background: rgba(6, 182, 212, 0.2); border: 1px solid rgba(6, 182, 212, 0.4); }
+    .user-card {
+      background: rgba(55, 65, 81, 0.5);
+      padding: 15px;
+      border-radius: 8px;
+      border-left: 4px solid #06b6d4;
+      margin: 10px 0;
+      font-family: monospace;
+      font-size: 0.9rem;
+    }
+    pre {
+      background: #1f2937;
+      padding: 15px;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-size: 0.85rem;
+      margin: 10px 0;
+    }
+    .warning {
+      background: rgba(245, 158, 11, 0.2);
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      padding: 15px;
+      border-radius: 8px;
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔬 Prueba Independiente de Login</h1>
+    <p class="subtitle">Herramienta de diagnóstico - No depende de otros archivos</p>
+    
+    <div class="warning">
+      <strong>⚠️ IMPORTANTE:</strong> Esta página funciona completamente independiente.
+      Todos los datos se guardan en localStorage del navegador.
+    </div>
+    
+    <div class="section">
+      <h2>1️⃣ Estado Actual del localStorage</h2>
+      <div id="currentStatus"></div>
+      <button class="btn btn-primary" onclick="checkStatus()">🔍 Verificar</button>
+    </div>
+    
+    <div class="section">
+      <h2>2️⃣ Crear/Reiniciar Usuarios</h2>
+      <div>
+        <button class="btn btn-success" onclick="createUsers()">✅ Crear Usuarios con Contraseña</button>
+        <button class="btn btn-warning" onclick="clearData()">🗑️ Borrar Datos</button>
+      </div>
+      <div id="createResult"></div>
+    </div>
+    
+    <div class="section">
+      <h2>3️⃣ Probar Login</h2>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+        <input type="text" id="loginUsername" placeholder="Username" style="padding: 12px; background: #1f2937; border: 1px solid #374151; border-radius: 8px; color: white;">
+        <input type="password" id="loginPassword" placeholder="Password" style="padding: 12px; background: #1f2937; border: 1px solid #374151; border-radius: 8px; color: white;">
+      </div>
+      <button class="btn btn-primary" onclick="testLogin()">🔐 Probar Login</button>
+      <div id="loginResult"></div>
+    </div>
+    
+    <div class="section">
+      <h2>4️⃣ Consola de Debug</h2>
+      <button class="btn btn-primary" onclick="runDebug()">▶️ Ejecutar Debug</button>
+      <pre id="debugOutput">Click en "Ejecutar Debug" para ver...</pre>
+    </div>
+  </div>
+  
+  <script>
+    const USERS_KEY = 'soc_monitor_api_users';
+    
+    // Funciones principales
+    function checkStatus() {
+      const statusDiv = document.getElementById('currentStatus');
+      const usersData = localStorage.getItem(USERS_KEY);
+      
+      if (!usersData) {
+        statusDiv.innerHTML = '<div class="status error">❌ No hay usuarios en localStorage</div>';
+      } else {
+        try {
+          const users = JSON.parse(usersData);
+          let html = '<div class="status success">✅ ' + users.length + ' usuario(s) encontrado(s)</div>';
+          
+          users.forEach(u => {
+            const hasPass = u.password && u.password.trim() !== '';
+            html += '<div class="user-card">';
+            html += '<strong>ID:</strong> ' + u.id + '<br>';
+            html += '<strong>Username:</strong> ' + u.username + '<br>';
+            html += '<strong>Nombre:</strong> ' + (u.full_name || 'N/A') + '<br>';
+            html += '<strong>Email:</strong> ' + u.email + '<br>';
+            html += '<strong>Rol:</strong> ' + u.role + '<br>';
+            html += '<strong>Activo:</strong> ' + (u.is_active ? 'Sí' : 'No') + '<br>';
+            html += '<strong>Contraseña:</strong> ' + (hasPass ? '✓ Configurada' : '✗ VACÍA') + '<br>';
+            html += '</div>';
+          });
+          
+          statusDiv.innerHTML = html;
+        } catch (e) {
+          statusDiv.innerHTML = '<div class="status error">❌ Error: ' + e.message + '</div>';
+        }
+      }
+    }
+    
+    function createUsers() {
+      const users = [
+        {
+          id: 1,
+          username: 'admin',
+          full_name: 'Administrador',
+          email: 'admin@empresa.com',
+          password: 'admin123',
+          role: 'admin',
+          is_active: true,
+          created_at: new Date().toISOString()
+        },
+        {
+          id: 2,
+          username: 'walterio',
+          full_name: 'Walter Rios',
+          email: 'walter@empresa.com',
+          password: 'walter123',
+          role: 'admin',
+          is_active: true,
+          created_at: new Date().toISOString()
+        },
+        {
+          id: 3,
+          username: 'alejo',
+          full_name: 'Alejo Usuario',
+          email: 'alejo@empresa.com',
+          password: 'alejo123',
+          role: 'operator',
+          is_active: true,
+          created_at: new Date().toISOString()
+        }
+      ];
+      
+      localStorage.setItem(USERS_KEY, JSON.stringify(users));
+      
+      document.getElementById('createResult').innerHTML = '<div class="status success">✅ Usuarios creados exitosamente!</div>' +
+        '<div class="user-card">👤 admin / admin123</div>' +
+        '<div class="user-card">👤 walterio / walter123</div>' +
+        '<div class="user-card">👤 alejo / alejo123</div>';
+      
+      checkStatus();
+    }
+    
+    function clearData() {
+      if (!confirm('¿Borrar todos los datos?')) return;
+      localStorage.removeItem(USERS_KEY);
+      document.getElementById('currentStatus').innerHTML = '<div class="status info">✅ Datos borrados</div>';
+      document.getElementById('createResult').innerHTML = '';
+      document.getElementById('loginResult').innerHTML = '';
+    }
+    
+    function testLogin() {
+      const username = document.getElementById('loginUsername').value.trim();
+      const password = document.getElementById('loginPassword').value;
+      const resultDiv = document.getElementById('loginResult');
+      
+      const usersData = localStorage.getItem(USERS_KEY);
+      if (!usersData) {
+        resultDiv.innerHTML = '<div class="status error">❌ No hay usuarios. Crea usuarios primero.</div>';
+        return;
+      }
+      
+      const users = JSON.parse(usersData);
+      const user = users.find(u => u.username === username);
+      
+      if (!user) {
+        resultDiv.innerHTML = '<div class="status error">❌ Usuario no encontrado</div>';
+      } else if (!user.password || user.password.trim() === '') {
+        resultDiv.innerHTML = '<div class="status error">❌ Usuario no tiene contraseña configurada</div>';
+      } else if (user.password !== password) {
+        resultDiv.innerHTML = '<div class="status error">❌ Contraseña incorrecta</div>';
+      } else {
+        resultDiv.innerHTML = '<div class="status success">✅ ¡LOGIN EXITOSO!</div>' +
+          '<div class="user-card">Bienvenido, ' + (user.full_name || user.username) + '!</div>';
+      }
+    }
+    
+    function runDebug() {
+      const output = document.getElementById('debugOutput');
+      let log = [];
+      
+      log.push('='.repeat(60));
+      log.push('DEBUG - Estado del localStorage');
+      log.push('='.repeat(60));
+      log.push('');
+      
+      // Listar claves
+      log.push('Claves disponibles en localStorage:');
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        log.push('  - ' + key);
+      }
+      log.push('');
+      
+      // Verificar usuarios
+      const usersData = localStorage.getItem(USERS_KEY);
+      log.push('Clave USERS_KEY: ' + USERS_KEY);
+      log.push('  Existe: ' + (usersData ? 'Sí' : 'No'));
+      
+      if (usersData) {
+        try {
+          const users = JSON.parse(usersData);
+          log.push('  Cantidad: ' + users.length);
+          
+          users.forEach(u => {
+            log.push('');
+            log.push('Usuario: ' + u.username);
+            log.push('  ID: ' + u.id);
+            log.push('  Password: ' + (u.password ? '✓ (' + u.password + ')' : '✗ VACÍO'));
+            log.push('  full_name: ' + (u.full_name || 'N/A'));
+            log.push('  email: ' + u.email);
+            log.push('  role: ' + u.role);
+          });
+        } catch (e) {
+          log.push('  Error: ' + e.message);
+        }
+      }
+      
+      // Verificar localStorage API
+      log.push('');
+      log.push('Verificación localStorage API:');
+      log.push('  setItem existe: ' + (typeof localStorage.setItem === 'function' ? 'Sí' : 'No'));
+      log.push('  getItem existe: ' + (typeof localStorage.getItem === 'function' ? 'Sí' : 'No'));
+      log.push('  removeItem existe: ' + (typeof localStorage.removeItem === 'function' ? 'Sí' : 'No'));
+      
+      // Intentar guardar y leer
+      try {
+        localStorage.setItem('test_key_12345', 'test_value');
+        const readValue = localStorage.getItem('test_key_12345');
+        log.push('');
+        log.push('Prueba de escritura/lectura:');
+        log.push('  Escribió: test_value');
+        log.push('  Leyó: ' + readValue);
+        log.push('  Coincide: ' + (readValue === 'test_value' ? 'Sí' : 'No'));
+        localStorage.removeItem('test_key_12345');
+      } catch (e) {
+        log.push('  Error: ' + e.message);
+      }
+      
+      log.push('');
+      log.push('='.repeat(60));
+      
+      output.textContent = log.join('\n');
+    }
+    
+    // Inicializar
+    window.addEventListener('DOMContentLoaded', () => {
+      checkStatus();
+    });
+  </script>
+</body>
+</html>

@@ -285,40 +285,89 @@
       // Simular autenticación
       setTimeout(() => {
         try {
-          // Verificar credenciales (simulado)
-          if (username === 'admin' || username === 'walterio') {
-            // Crear sesión
-            const sessionData = {
-              username: username,
-              role: 'admin',
-              loginTime: new Date().toISOString()
-            };
-
-            localStorage.setItem(AUTH_CONFIG.STORAGE_KEYS.TOKEN, 'valid_token_' + Date.now());
-            localStorage.setItem(AUTH_CONFIG.STORAGE_KEYS.USER, username);
-            localStorage.setItem(AUTH_CONFIG.STORAGE_KEYS.ROLE, 'admin');
-            localStorage.setItem(AUTH_CONFIG.STORAGE_KEYS.LAST_LOGIN, new Date().toISOString());
-
-            showSuccess(`✅ ¡Bienvenido, ${username}!`);
-
-            // Redirigir al dashboard
-            setTimeout(() => {
-              window.location.href = 'dashboard.html';
-            }, 800);
-
-          } else {
-            showError('❌ Usuario no encontrado. Intenta con: admin o walterio');
+          // Obtener usuarios desde localStorage
+          const usersData = localStorage.getItem('soc_monitor_api_users');
+          
+          // DEBUG: Mostrar qué hay en localStorage
+          console.log('[DEBUG] usersData:', usersData);
+          console.log('[DEBUG] localStorage keys:', Object.keys(localStorage));
+          
+          const users = usersData ? JSON.parse(usersData) : [];
+          console.log('[DEBUG] users array:', users);
+          console.log('[DEBUG] buscando usuario:', username);
+          
+          // Buscar usuario por username - mostrar TODOS los usernames disponibles
+          const allUsernames = users.map(u => u.username);
+          console.log('[DEBUG] todos los usernames:', allUsernames);
+          
+          // Buscar usuario por username (case-INSENSITIVE exact match)
+          const user = users.find(u => u.username.toLowerCase() === username.toLowerCase());
+          console.log('[DEBUG] user encontrado:', user);
+          
+          if (!user) {
+            // Mostrar error con lista de usuarios disponibles
+            const userList = users.length > 0 ? users.map(u => u.username).join(', ') : 'NINGUNO';
+            showError(`❌ Usuario no encontrado: "${username}"\n\nUsuarios disponibles: ${userList || 'NINGUNO'}`);
             loginBtn.disabled = false;
             loginBtn.innerHTML = '🔐 Acceder';
+            return;
           }
+          
+          console.log('[DEBUG] Usuario encontrado - Verificando contraseña');
+          console.log('[DEBUG] password en usuario:', user.password ? '(existe)' : '(vacío)');
+          console.log('[DEBUG] password ingresado:', password ? '(existe)' : '(vacío)');
+          console.log('[DEBUG] Comparación - usuario.password:', user.password);
+          console.log('[DEBUG] Comparación - password:', password);
+          
+          // Verificar contraseña (case-sensitive exact match)
+          if (!user.password || user.password.trim() === '') {
+            showError('❌ El usuario no tiene contraseña configurada. Pide al administrador que le ponga una contraseña.');
+            loginBtn.disabled = false;
+            loginBtn.innerHTML = '🔐 Acceder';
+            return;
+          }
+          
+          if (user.password !== password) {
+            showError(`❌ Contraseña incorrecta\n\nPassword en sistema: "${user.password}"\nPassword ingresado: "${password}"`);
+            loginBtn.disabled = false;
+            loginBtn.innerHTML = '🔐 Acceder';
+            return;
+          }
+          
+          console.log('[DEBUG] Credenciales válidas - Creando sesión');
+          
+          // Crear sesión
+          const sessionData = {
+            username: username,
+            role: user.role || 'operator',
+            loginTime: new Date().toISOString()
+          };
+          
+          localStorage.setItem(AUTH_CONFIG.STORAGE_KEYS.TOKEN, 'valid_token_' + Date.now());
+          localStorage.setItem(AUTH_CONFIG.STORAGE_KEYS.USER, username);
+          localStorage.setItem(AUTH_CONFIG.STORAGE_KEYS.ROLE, user.role || 'operator');
+          localStorage.setItem(AUTH_CONFIG.STORAGE_KEYS.LAST_LOGIN, new Date().toISOString());
+          
+          console.log('[DEBUG] Sesión creada');
+          console.log('[DEBUG] Token:', localStorage.getItem(AUTH_CONFIG.STORAGE_KEYS.TOKEN));
+          console.log('[DEBUG] Usuario:', localStorage.getItem(AUTH_CONFIG.STORAGE_KEYS.USER));
+          console.log('[DEBUG] Role:', localStorage.getItem(AUTH_CONFIG.STORAGE_KEYS.ROLE));
+          
+          showSuccess(`✅ ¡Bienvenido, ${user.full_name || username}!`);
+          
+          // Redirigir al dashboard
+          setTimeout(() => {
+            console.log('[DEBUG] Redirigiendo a dashboard.html');
+            window.location.href = 'dashboard.html';
+          }, 800);
 
         } catch (error) {
-          showError('❌ Error al autenticar. Intenta nuevamente.');
+          console.error('[DEBUG] Error completo:', error);
+          showError('❌ Error al autenticar: ' + error.message);
           loginBtn.disabled = false;
           loginBtn.innerHTML = '🔐 Acceder';
-          console.error('Login error:', error);
         }
-      }, 1000);
+      }, 500);
     }
 
     // Mostrar error

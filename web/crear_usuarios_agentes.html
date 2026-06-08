@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Crear Usuarios - SOC Monitor</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      color: #f9fafb;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .container {
+      background: rgba(15, 23, 42, 0.9);
+      padding: 40px;
+      border-radius: 16px;
+      max-width: 500px;
+      width: 100%;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+    }
+    h1 { color: #06b6d4; margin-bottom: 10px; text-align: center; }
+    .subtitle { color: #9ca3af; text-align: center; margin-bottom: 30px; }
+    .btn {
+      padding: 15px 30px;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 600;
+      margin: 10px;
+      transition: all 0.3s;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #06b6d4, #0891b2);
+      color: white;
+      width: 100%;
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(6, 182, 212, 0.4); }
+    .btn-success {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: white;
+      width: 100%;
+    }
+    .btn-danger {
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      color: white;
+      width: 100%;
+    }
+    .result {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 8px;
+      display: none;
+    }
+    .result.success {
+      background: rgba(16, 185, 129, 0.2);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      color: #6ee7b7;
+    }
+    .result.error {
+      background: rgba(239, 68, 68, 0.2);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      color: #fca5a5;
+    }
+    .user-list {
+      margin-top: 20px;
+      padding: 15px;
+      background: rgba(6, 182, 212, 0.1);
+      border-radius: 8px;
+      border: 1px solid rgba(6, 182, 212, 0.3);
+    }
+    .user-item {
+      padding: 10px;
+      margin: 5px 0;
+      background: rgba(15, 23, 42, 0.8);
+      border-radius: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .user-item .username { color: #06b6d4; font-weight: 600; }
+    .user-item .role { color: #f9fafb; font-size: 0.9rem; }
+    .user-item .status { color: #10b981; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔑 Crear Usuarios SOC Monitor</h1>
+    <p class="subtitle">Generar usuarios con credenciales predefinidas</p>
+    
+    <button class="btn btn-primary" onclick="createUsers()">
+      ✅ Crear Agentes 1 y 2 (Operadores)
+    </button>
+    
+    <button class="btn btn-success" onclick="viewUsers()">
+      📋 Ver Usuarios en Sistema
+    </button>
+    
+    <button class="btn btn-danger" onclick="clearUsers()">
+      🗑️ Borrar Todos los Usuarios
+    </button>
+    
+    <div id="result" class="result"></div>
+    <div id="userList" class="user-list" style="display: none;"></div>
+  </div>
+
+  <script>
+    const USERS_KEY = 'soc_monitor_api_users';
+
+    function createUsers() {
+      // Usuarios existentes (si hay)
+      const existingData = localStorage.getItem(USERS_KEY);
+      let users = existingData ? JSON.parse(existingData) : [];
+      
+      // Verificar si ya existen
+      const agent1Exists = users.some(u => u.username === 'agente1');
+      const agent2Exists = users.some(u => u.username === 'agente2');
+      
+      // Crear nuevos usuarios
+      const newUsers = [
+        {
+          id: users.length > 0 ? Math.max(...users.map(u => u.id)) + 1 : 1,
+          username: 'agente1',
+          full_name: 'Agente SOC 1',
+          email: 'agente1@empresa.com',
+          password: 'agente123',
+          role: 'operator',
+          is_active: true,
+          created_at: new Date().toISOString()
+        },
+        {
+          id: users.length > 0 ? Math.max(...users.map(u => u.id)) + 1 : 2,
+          username: 'agente2',
+          full_name: 'Agente SOC 2',
+          email: 'agente2@empresa.com',
+          password: 'agente123',
+          role: 'operator',
+          is_active: true,
+          created_at: new Date().toISOString()
+        }
+      ];
+      
+      // Actualizar si ya existen o agregar si no
+      let updated = false;
+      newUsers.forEach(newUser => {
+        const existingIndex = users.findIndex(u => u.username === newUser.username);
+        if (existingIndex >= 0) {
+          // Actualizar existente
+          users[existingIndex] = {
+            ...users[existingIndex],
+            password: newUser.password,
+            role: newUser.role,
+            full_name: newUser.full_name,
+            email: newUser.email,
+            updated_at: new Date().toISOString()
+          };
+          updated = true;
+        } else {
+          // Agregar nuevo
+          users.push(newUser);
+          updated = true;
+        }
+      });
+      
+      // Guardar
+      localStorage.setItem(USERS_KEY, JSON.stringify(users));
+      
+      showResult('success', `✅ Usuarios ${agent1Exists && agent2Exists ? 'actualizados' : 'creados'} exitosamente!`);
+      viewUsers();
+    }
+
+    function viewUsers() {
+      const usersData = localStorage.getItem(USERS_KEY);
+      const userListDiv = document.getElementById('userList');
+      
+      if (!usersData) {
+        userListDiv.innerHTML = '<div style="color: #ef4444;">No hay usuarios en el sistema</div>';
+        userListDiv.style.display = 'block';
+        return;
+      }
+      
+      const users = JSON.parse(usersData);
+      
+      let html = '<h3 style="color: #06b6d4; margin-bottom: 15px;">📋 Usuarios en Sistema</h3>';
+      
+      users.forEach(u => {
+        const hasPass = u.password && u.password.trim() !== '';
+        const badge = u.role === 'admin' ? 'ADMIN' : 'OPERATOR';
+        const badgeColor = u.role === 'admin' ? '#8b5cf6' : '#06b6d4';
+        
+        html += `<div class="user-item">
+          <div>
+            <span class="username">${u.username}</span>
+            <span style="margin-left: 10px; background: ${badgeColor}; padding: 2px 8px; border-radius: 12px; font-size: 0.8rem;">${badge}</span>
+          </div>
+          <div class="role">${u.full_name || u.username}</div>
+          <div class="status">${hasPass ? '✅ Contraseña' : '❌ Sin contraseña'}</div>
+        </div>`;
+      });
+      
+      userListDiv.innerHTML = html;
+      userListDiv.style.display = 'block';
+    }
+
+    function clearUsers() {
+      if (!confirm('⚠️ ¿Estás seguro de BORRAR TODOS los usuarios del sistema? Esta acción no se puede deshacer.')) {
+        return;
+      }
+      
+      localStorage.removeItem(USERS_KEY);
+      showResult('success', '✅ Todos los usuarios han sido eliminados.');
+      document.getElementById('userList').style.display = 'none';
+    }
+
+    function showResult(type, message) {
+      const resultDiv = document.getElementById('result');
+      resultDiv.className = 'result ' + type;
+      resultDiv.style.display = 'block';
+      resultDiv.innerHTML = message;
+      
+      setTimeout(() => {
+        resultDiv.style.display = 'none';
+      }, 5000);
+    }
+
+    // Cargar usuarios al iniciar
+    window.onload = function() {
+      viewUsers();
+    };
+  </script>
+</body>
+</html>

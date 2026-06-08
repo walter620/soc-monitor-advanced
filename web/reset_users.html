@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Reiniciar Usuarios - SOC Monitor</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #0f172a, #1e293b);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #f9fafb;
+      padding: 20px;
+    }
+    .container {
+      background: rgba(15, 23, 42, 0.95);
+      padding: 40px;
+      border-radius: 16px;
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      max-width: 600px;
+      width: 100%;
+    }
+    h1 { color: #06b6d4; margin-bottom: 20px; }
+    .btn {
+      padding: 15px 25px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 600;
+      margin: 10px 5px;
+    }
+    .btn-primary { background: linear-gradient(135deg, #06b6d4, #0891b2); color: white; }
+    .btn-danger { background: linear-gradient(135deg, #ef4444, #dc2626); color: white; }
+    .btn-success { background: linear-gradient(135deg, #10b981, #059669); color: white; }
+    .status { margin: 20px 0; padding: 15px; border-radius: 8px; }
+    .status.info { background: rgba(6, 182, 212, 0.1); border: 1px solid rgba(6, 182, 212, 0.3); }
+    .status.success { background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); }
+    .status.error { background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); }
+    pre { background: #1f2937; padding: 15px; border-radius: 8px; overflow-x: auto; font-size: 0.85rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔧 Reiniciar Usuarios - SOC Monitor</h1>
+    
+    <div id="status" class="status info">
+      <strong>⚠️ Instrucciones:</strong><br>
+      1. Click en "Verificar Estado Actual"<br>
+      2. Si hay problemas, click en "Reiniciar Completo"<br>
+      3. Luego verifica con "Verificar Resultado"
+    </div>
+    
+    <button class="btn btn-primary" onclick="verifyStatus()">🔍 Verificar Estado Actual</button>
+    <button class="btn btn-success" onclick="resetAndCreate()">🔄 Reiniciar y Crear Usuarios</button>
+    <button class="btn btn-danger" onclick="clearAllStorage()">🗑️ Borrar TODO el localStorage</button>
+    
+    <div id="details" style="margin-top: 30px;"></div>
+  </div>
+  
+  <script>
+    const USERS_KEY = 'soc_monitor_api_users';
+    
+    function showMessage(message, type = 'info') {
+      const statusDiv = document.getElementById('status');
+      statusDiv.className = 'status ' + type;
+      statusDiv.innerHTML = message;
+    }
+    
+    function verifyStatus() {
+      const detailsDiv = document.getElementById('details');
+      
+      // Listar todas las claves
+      const allKeys = Object.keys(localStorage);
+      let html = '<h3>📦 Claves en localStorage:</h3><pre>';
+      allKeys.forEach(key => html += key + '\n');
+      html += '</pre>';
+      
+      // Verificar usuarios
+      const usersData = localStorage.getItem(USERS_KEY);
+      if (!usersData) {
+        html += '<div class="status error">❌ No hay usuarios en localStorage</div>';
+      } else {
+        try {
+          const users = JSON.parse(usersData);
+          html += '<div class="status success">✅ ' + users.length + ' usuario(s) encontrado(s)</div>';
+          html += '<h3>👥 Usuarios:</h3><pre>';
+          users.forEach(u => {
+            const hasPass = u.password && u.password.trim() !== '';
+            html += JSON.stringify(u, null, 2) + '\n---\n';
+            console.log('Usuario:', u.username, 'Password:', hasPass ? '✓' : '✗');
+          });
+          html += '</pre>';
+          
+          // Verificar alejo específicamente
+          const alejo = users.find(u => u.username === 'alejo');
+          if (!alejo) {
+            html += '<div class="status error">❌ Usuario "alejo" NO existe</div>';
+          } else {
+            if (!alejo.password || alejo.password.trim() === '') {
+              html += '<div class="status error">❌ Usuario "alejo" existe PERO NO TIENE CONTRASEÑA</div>';
+            } else {
+              html += '<div class="status success">✅ Usuario "alejo" existe Y tiene contraseña</div>';
+            }
+          }
+        } catch (e) {
+          html += '<div class="status error">❌ Error al parsear usuarios: ' + e.message + '</div>';
+        }
+      }
+      
+      detailsDiv.innerHTML = html;
+    }
+    
+    function resetAndCreate() {
+      if (!confirm('⚠️ ¿Estás seguro? Esto borrará TODOS los usuarios y creará nuevos.
+
+No podrás deshacer esta acción.')) {
+        return;
+      }
+      
+      try {
+        // Crear usuarios
+        const users = [
+          {
+            id: 1,
+            username: 'admin',
+            full_name: 'Administrador del Sistema',
+            email: 'admin@empresa.com',
+            password: 'admin123',  // ¡CON CONTRASEÑA!
+            role: 'admin',
+            is_active: true,
+            created_at: new Date().toISOString().split('T')[0],
+            last_login: null
+          },
+          {
+            id: 2,
+            username: 'walterio',
+            full_name: 'Walter Rios',
+            email: 'walter@empresa.com',
+            password: 'walter123',  // ¡CON CONTRASEÑA!
+            role: 'admin',
+            is_active: true,
+            created_at: new Date().toISOString().split('T')[0],
+            last_login: null
+          },
+          {
+            id: 3,
+            username: 'alejo',
+            full_name: 'Alejo Usuario',
+            email: 'alejo@empresa.com',
+            password: 'alejo123',  // ¡CON CONTRASEÑA!
+            role: 'operator',
+            is_active: true,
+            created_at: new Date().toISOString().split('T')[0],
+            last_login: null
+          }
+        ];
+        
+        localStorage.setItem(USERS_KEY, JSON.stringify(users));
+        
+        showMessage('<strong>✅ Usuarios creados exitosamente!</strong><br><br>' +
+                   '<strong>admin</strong> / <strong>admin123</strong><br>' +
+                   '<strong>walterio</strong> / <strong>walter123</strong><br>' +
+                   '<strong>alejo</strong> / <strong>alejo123</strong>', 'success');
+                   
+        verifyStatus();
+        
+      } catch (e) {
+        showMessage('<strong>❌ Error al crear usuarios:</strong> ' + e.message, 'error');
+        console.error(e);
+      }
+    }
+    
+    function clearAllStorage() {
+      if (!confirm('⚠️ ¡PRECAUCIÓN! Esto borrará TODO el localStorage, incluyendo:
+' +
+                   '- Usuarios
+' +
+                   '- Reportes
+' +
+                   '- Sesiones
+' +
+                   '¿Estás seguro?')) {
+        return;
+      }
+      
+      localStorage.clear();
+      showMessage('<strong>✅ localStorage borrado</strong><br><br>Recarga la página para empezar de nuevo', 'info');
+      verifyStatus();
+    }
+    
+    // Verificar al cargar
+    window.addEventListener('DOMContentLoaded', () => {
+      verifyStatus();
+    });
+  </script>
+</body>
+</html>
